@@ -7,7 +7,7 @@ setup(
     version="0.0.1",
     author="John Koenig",
     author_email="john@postmates.com",
-    description=("Python client for Cernan."),
+    description="Python client for Cernan.",
     license="MIT",
     keywords="client cernan",
     url="https://github.com/postmates/pycernan",
@@ -19,7 +19,6 @@ setup(
     ],
     install_requires=[
         'avro-python3',
-        'uuid>=1.30',
     ],
     dependency_links=[
     ],

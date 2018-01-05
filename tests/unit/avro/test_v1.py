@@ -40,11 +40,6 @@ def test_publish(_publish_bloc_mock, _connect_mock):
     c.publish(USER_SCHEMA, [user])
 
 
-def test_cannot_connect():
-    with pytest.raises(ConnectionRefusedError):
-        c = pycernan.avro.v1.Client()
-
-
 @mock.patch('pycernan.avro.v1.Client._connect', return_value=None)
 def test_publish_bad_schema(_connect_mock):
     schema = "Not a dict"

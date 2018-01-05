@@ -5,12 +5,12 @@
 import json
 import socket
 
-from io import BytesIO
-
+import avro
 from abc import ABCMeta
-from avro import schema, io
+from io import BytesIO
 from avro.io import DatumWriter
 from avro.datafile import DataFileWriter
+
 from pycernan.avro.exceptions import SchemaParseException, DatumTypeException, EmptyBatchException
 
 
@@ -20,9 +20,9 @@ class Client(metaclass=ABCMeta):
     """
     sock = None
 
-    def __init__(self, host="127.0.0.1", port=2002, timeout=(50, 10)):
-        self.connect_timeout = timeout[0]
-        self.publish_timeout = timeout[1]
+    def __init__(self, host="127.0.0.1", port=2002, connect_timeout=50, publish_timeout=10):
+        self.connect_timeout = connect_timeout
+        self.publish_timeout = publish_timeout
 
         self._connect(host, port)
 
@@ -32,7 +32,6 @@ class Client(metaclass=ABCMeta):
         """
         self.sock = socket.create_connection((host, port), timeout=self.connect_timeout)
         self.sock.settimeout(self.publish_timeout)
-        self.sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 
     def close(self):
         """
@@ -57,25 +56,19 @@ class Client(metaclass=ABCMeta):
             raise EmptyBatchException()
 
         try:
-            parsed_schema = schema.Parse(json.dumps(schema_map))
-        except schema.SchemaParseException as e:
+            parsed_schema = avro.schema.Parse(json.dumps(schema_map))
+        except avro.schema.SchemaParseException as e:
             raise SchemaParseException from e
 
         avro_buf = BytesIO()
-        writer = DataFileWriter(
-            avro_buf,
-            DatumWriter(),
-            parsed_schema,
-            'deflate'
-        )
-        try:
-            for record in batch:
-                writer.append(record)
-        except io.AvroTypeException as e:
-            raise DatumTypeException(e)
+        with DataFileWriter(avro_buf, DatumWriter(), parsed_schema, 'deflate') as writer:
+            try:
+                for record in batch:
+                    writer.append(record)
+            except avro.io.AvroTypeException as e:
+                raise DatumTypeException(e)
 
-        self.publish_blob(avro_buf.getvalue(), **kwargs)
-        avro_buf.close()
+            self.publish_blob(avro_buf.getvalue(), **kwargs)
 
     def publish_file(self, file_path, **kwargs):
         """
@@ -89,7 +82,8 @@ class Client(metaclass=ABCMeta):
         """
         with open(file_path, "rb") as file:
             avro_blob = file.read()
-            self.publish_blob(avro_blob, **kwargs)
+
+        self.publish_blob(avro_blob, **kwargs)
 
     def publish_blob(self, avro_blob, **kwargs):
         """

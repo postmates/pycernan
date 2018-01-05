@@ -2,8 +2,8 @@
     V1 Client for Cernan's Avro source.
 """
 
+import random
 import struct
-import uuid
 
 from pycernan.avro import client
 from pycernan.avro.exceptions import InvalidAckException
@@ -12,7 +12,7 @@ _VERSION = 1
 
 
 def _rand_u64():
-    return uuid.uuid1().int>>64
+    return random.randrange(2**64)
 
 
 class Client(client.Client):
@@ -22,14 +22,25 @@ class Client(client.Client):
 
     def publish_blob(self, avro_blob, id=None, order_by=None):
         """
-            Publishes an avro payload to a V1 Avro source.
+            Publishes an length prefixed avro payload to a V1 Avro source.
 
-            The following payload is generated and placed onto the established tcp connection:
+            The following describes the avro payload which follows a 4 byte, big-endian length:
 
                     | version - 4 bytes   |   control - 4 bytes  |
                     |               id - 8 bytes                 |
                     |           order_by - 8 bytes               |
                     |               avro - N bytes               |
+
+
+            The fields of the payload have the following semantic meaning:
+
+            * version - Version of the wire protocol used.  In this case, 1.
+            * control - Metadata governing on the payload is to be published.
+                        Version 1 of the protocol only supports a bit indicating
+                        whether or not the client expects an ack after publication.
+            * id - Explained in kwargs.
+            * order_by - Explained in kwargs.
+
 
             Kwargs:
                 id : int - Optional identifier for the payload.  If not None, then the publish
@@ -42,7 +53,7 @@ class Client(client.Client):
         id = int(id) if id else _rand_u64()
         order_by = order_by or _rand_u64()
         header = struct.pack(">LLQQ", version, sync, id, order_by)
-        payload_len = header.__len__() + avro_blob.__len__()
+        payload_len = len(header) + len(avro_blob)
         payload = struct.pack(">L", payload_len) + header + avro_blob
 
         self.sock.send(payload)
