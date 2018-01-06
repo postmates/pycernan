@@ -1,14 +1,11 @@
 """
     V1 Client for Cernan's Avro source.
 """
-
 import random
 import struct
 
 from pycernan.avro import client
 from pycernan.avro.exceptions import InvalidAckException
-
-_VERSION = 1
 
 
 def _rand_u64():
@@ -19,6 +16,8 @@ class Client(client.Client):
     """
        V1 of the Avro source protocol.
     """
+
+    VERSION = 1
 
     def publish_blob(self, avro_blob, id=None, order_by=None):
         """
@@ -48,7 +47,7 @@ class Client(client.Client):
 
                 order_by : int - Value used to order the event in downstream buckets.
         """
-        version = _VERSION
+        version = self.VERSION
         sync = 1 if id else 0
         id = int(id) if id else _rand_u64()
         order_by = order_by or _rand_u64()
@@ -56,14 +55,27 @@ class Client(client.Client):
         payload_len = len(header) + len(avro_blob)
         payload = struct.pack(">L", payload_len) + header + avro_blob
 
+        self._send(id, sync, payload)
+
+    def _send(self, id, sync, payload):
         self.sock.send(payload)
 
         if sync:
-            self.wait_for_ack(id)
+            self._wait_for_ack(id)
 
-        def wait_for_ack(self, id):
-            id_bytes = self.sock.recv(4)
-            recv_id = int.from_bytes(id_bytes, byteorder='big')
+    def _wait_for_ack(self, id):
+        id_bytes = self._recv_exact(4)
+        recv_id = int.from_bytes(id_bytes, byteorder='big')
 
-            if recv_id != id:
-                raise InvalidAckException()
+        if recv_id != id:
+            raise InvalidAckException()
+
+    def _recv_exact(self, n_bytes):
+        buf = ''
+        while len(buf) < n_bytes:
+            buf += self.sock.recv(n_bytes - len(buf))
+
+        if len(buf) != n_bytes:
+            raise ConnectionResetError()
+
+        return buf

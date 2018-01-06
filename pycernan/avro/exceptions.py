@@ -5,8 +5,7 @@ class SchemaParseException(Exception):
 
 
 class DatumTypeException(Exception):
-    def __init__(self, avro_exception):
-        self.avro_exception = avro_exception
+    pass
 
 
 class EmptyBatchException(Exception):

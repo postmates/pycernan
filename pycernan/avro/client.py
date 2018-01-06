@@ -6,7 +6,7 @@ import json
 import socket
 
 import avro
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 from io import BytesIO
 from avro.io import DatumWriter
 from avro.datafile import DataFileWriter
@@ -66,7 +66,7 @@ class Client(metaclass=ABCMeta):
                 for record in batch:
                     writer.append(record)
             except avro.io.AvroTypeException as e:
-                raise DatumTypeException(e)
+                raise DatumTypeException from e
 
             self.publish_blob(avro_buf.getvalue(), **kwargs)
 
@@ -85,6 +85,7 @@ class Client(metaclass=ABCMeta):
 
         self.publish_blob(avro_blob, **kwargs)
 
+    @abstractmethod
     def publish_blob(self, avro_blob, **kwargs):
         """
             Version specific payload generation / publication.
