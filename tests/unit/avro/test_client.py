@@ -5,6 +5,7 @@ import mock
 import pytest
 
 import pycernan
+import settings
 from pycernan.avro.exceptions import SchemaParseException, DatumTypeException, EmptyBatchException
 
 
@@ -27,7 +28,7 @@ class DummyClient(pycernan.avro.client.Client):
     def publish_blob(self, avro_blob):
         pass
 
-@pytest.mark.parametrize("avro_file", glob.glob("./tests/data/*.avro"))
+@pytest.mark.parametrize("avro_file", settings.test_data)
 def test_publish_file(avro_file):
     c = DummyClient()
     c.publish_file(avro_file)

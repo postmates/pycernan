@@ -25,14 +25,15 @@ class Client(metaclass=ABCMeta):
         self.connect_timeout = connect_timeout
         self.publish_timeout = publish_timeout
 
-        self._connect(host, port)
+        self.sock = self._connect(host, port)
 
     def _connect(self, host, port):
         """
             Establishes TCP connection to the given Cernan instance.
         """
-        self.sock = socket.create_connection((host, port), timeout=self.connect_timeout)
-        self.sock.settimeout(self.publish_timeout)
+        sock = socket.create_connection((host, port), timeout=self.connect_timeout)
+        sock.settimeout(self.publish_timeout)
+        return sock
 
     def close(self):
         """
