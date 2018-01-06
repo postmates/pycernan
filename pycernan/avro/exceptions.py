@@ -1,11 +1,10 @@
+import avro
 
 
-class SchemaParseException(Exception):
-    pass
+SchemaParseException = avro.schema.SchemaParseException
 
 
-class DatumTypeException(Exception):
-    pass
+DatumTypeException = avro.io.AvroTypeException
 
 
 class EmptyBatchException(Exception):

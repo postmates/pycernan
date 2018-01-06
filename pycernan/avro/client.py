@@ -11,6 +11,7 @@ from io import BytesIO
 from avro.io import DatumWriter
 from avro.datafile import DataFileWriter
 
+import pycernan
 from pycernan.avro.exceptions import SchemaParseException, DatumTypeException, EmptyBatchException
 
 
@@ -55,18 +56,12 @@ class Client(metaclass=ABCMeta):
         if not batch:
             raise EmptyBatchException()
 
-        try:
-            parsed_schema = avro.schema.Parse(json.dumps(schema_map))
-        except avro.schema.SchemaParseException as e:
-            raise SchemaParseException from e
+        parsed_schema = avro.schema.Parse(json.dumps(schema_map))
 
         avro_buf = BytesIO()
         with DataFileWriter(avro_buf, DatumWriter(), parsed_schema, 'deflate') as writer:
-            try:
-                for record in batch:
-                    writer.append(record)
-            except avro.io.AvroTypeException as e:
-                raise DatumTypeException from e
+            for record in batch:
+                writer.append(record)
 
             self.publish_blob(avro_buf.getvalue(), **kwargs)
 

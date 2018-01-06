@@ -4,7 +4,7 @@ import json
 import mock
 import pytest
 
-import pycernan.avro.v1
+import pycernan
 from pycernan.avro.exceptions import SchemaParseException, DatumTypeException, EmptyBatchException
 
 
