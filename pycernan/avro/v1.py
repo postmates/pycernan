@@ -5,7 +5,7 @@ import random
 import struct
 
 from pycernan.avro import client
-from pycernan.avro.exceptions import InvalidAckException
+from pycernan.avro.exceptions import InvalidAckException, ConnectionResetException
 
 
 def _rand_u64():
@@ -76,6 +76,6 @@ class Client(client.Client):
             buf += self.sock.recv(n_bytes - len(buf))
 
         if len(buf) != n_bytes:
-            raise ConnectionResetError()
+            raise ConnectionResetException()
 
         return buf

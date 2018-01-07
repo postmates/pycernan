@@ -13,3 +13,7 @@ class EmptyBatchException(Exception):
 
 class InvalidAckException(Exception):
     pass
+
+
+class ConnectionResetException(Exception):
+    pass

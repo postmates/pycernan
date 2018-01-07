@@ -1,4 +1,5 @@
 import os
+import sys
 
 from setuptools import setup, find_packages
 
@@ -18,8 +19,11 @@ setup(
         'mock>=1.0.1',
     ],
     install_requires=[
-        'avro-python3',
     ],
+    extras_require={
+        ":python_version<'3.0'": ["avro"],
+        ":python_version>='3.0'": ["avro-python3"],
+    },
     dependency_links=[
     ],
     include_package_data=True,
