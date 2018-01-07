@@ -18,7 +18,7 @@ else:
 from pycernan.avro.exceptions import EmptyBatchException
 
 
-class Client():
+class Client(object):
     """
         Interface specification for all Avro clients.
     """
