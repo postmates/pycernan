@@ -1,24 +1,28 @@
 """
     Base Avro client from which all other clients derive.
 """
-
 import json
 import socket
+import sys
 
-import avro
 from abc import ABCMeta, abstractmethod
 from io import BytesIO
+
 from avro.io import DatumWriter
 from avro.datafile import DataFileWriter
+if sys.version_info >= (3, 0):
+    from avro.schema import Parse
+else:
+    from avro.schema import parse as Parse
 
-import pycernan
-from pycernan.avro.exceptions import SchemaParseException, DatumTypeException, EmptyBatchException
+from pycernan.avro.exceptions import EmptyBatchException
 
 
-class Client(metaclass=ABCMeta):
+class Client():
     """
         Interface specification for all Avro clients.
     """
+    __metaclass__ = ABCMeta
     sock = None
 
     def __init__(self, host="127.0.0.1", port=2002, connect_timeout=50, publish_timeout=10):
@@ -57,7 +61,7 @@ class Client(metaclass=ABCMeta):
         if not batch:
             raise EmptyBatchException()
 
-        parsed_schema = avro.schema.Parse(json.dumps(schema_map))
+        parsed_schema = Parse(json.dumps(schema_map))
 
         avro_buf = BytesIO()
         with DataFileWriter(avro_buf, DatumWriter(), parsed_schema, 'deflate') as writer:
