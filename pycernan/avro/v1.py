@@ -49,7 +49,7 @@ class Client(client.Client):
         """
         version = self.VERSION
         sync = 1 if id else 0
-        id = int(id) if id else _rand_u64()
+        id = int(id) or _rand_u64()
         order_by = order_by or _rand_u64()
         header = struct.pack(">LLQQ", version, sync, id, order_by)
         payload_len = len(header) + len(avro_blob)
@@ -64,18 +64,18 @@ class Client(client.Client):
             self._wait_for_ack(id)
 
     def _wait_for_ack(self, id):
-        id_bytes = self._recv_exact(4)
-        recv_id = int.from_bytes(id_bytes, byteorder='big')
+        id_bytes = self._recv_exact(8)
+        (recv_id,) = struct.unpack(">Q", id_bytes)
 
         if recv_id != id:
             raise InvalidAckException()
 
     def _recv_exact(self, n_bytes):
-        buf = ''
+        buf = bytearray(b'')
         while len(buf) < n_bytes:
-            buf += self.sock.recv(n_bytes - len(buf))
+            buf.extend(self.sock.recv(n_bytes - len(buf)))
 
         if len(buf) != n_bytes:
             raise ConnectionResetException()
 
-        return buf
+        return bytes(buf)
