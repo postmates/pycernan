@@ -49,7 +49,7 @@ class Client(client.Client):
         """
         version = self.VERSION
         sync = 1 if id else 0
-        id = int(id) or _rand_u64()
+        id = int(id) if id else _rand_u64()
         order_by = order_by or _rand_u64()
         header = struct.pack(">LLQQ", version, sync, id, order_by)
         payload_len = len(header) + len(avro_blob)
