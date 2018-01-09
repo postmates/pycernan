@@ -10,12 +10,12 @@ from io import BytesIO
 
 from avro.io import DatumWriter
 from avro.datafile import DataFileWriter
+from pycernan.avro.exceptions import EmptyBatchException
+
 if sys.version_info >= (3, 0):
     from avro.schema import Parse
 else:
     from avro.schema import parse as Parse
-
-from pycernan.avro.exceptions import EmptyBatchException
 
 
 class Client(object):
