@@ -74,7 +74,7 @@ class Client(client.Client):
         while total < len(payload):
             sent = self.sock.send(payload[total:])
             if sent == 0:
-                raise ConnectionResetException
+                raise ConnectionResetException()
 
             total += sent
 
@@ -83,7 +83,7 @@ class Client(client.Client):
         while len(buf) < n_bytes:
             recvd = self.sock.recv(n_bytes - len(buf))
             if len(recvd) == 0:
-                raise ConnectionResetException
+                raise ConnectionResetException()
 
             buf.extend(recvd)
 
