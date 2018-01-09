@@ -1,9 +1,6 @@
 import avro
 
-
 SchemaParseException = avro.schema.SchemaParseException
-
-
 DatumTypeException = avro.io.AvroTypeException
 
 

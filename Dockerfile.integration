@@ -1,0 +1,6 @@
+FROM alpine:3.5
+
+RUN apk add --update bash python make postgresql-dev gcc g++ musl-dev py-msgpack py-setuptools python2-dev python3-dev py2-pip sudo wget openssl psmisc git ca-certificates
+RUN update-ca-certificates
+
+RUN pip install tox
