@@ -4,5 +4,3 @@ RUN apk add --update bash python make postgresql-dev gcc g++ musl-dev py-msgpack
 RUN update-ca-certificates
 
 RUN pip install tox
-
-COPY . /opt/pycernan
