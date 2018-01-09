@@ -1,4 +1,5 @@
 import random
+import socket
 import struct
 
 import mock
@@ -22,20 +23,23 @@ def test_params():
         (random_id(), random_order_by(), test_file) for test_file in settings.test_data]
 
 @pytest.mark.parametrize("id, order_by, avro_file", test_params())
-@mock.patch('pycernan.avro.v1.Client._connect', return_value=None)
-@mock.patch('pycernan.avro.v1.Client._send', return_value=None)
-def test_publish_blob(send_mock, connect_mock, id, order_by, avro_file):
+@mock.patch('pycernan.avro.v1.Client._connect', return_value=None, autospec=True)
+@mock.patch('pycernan.avro.v1.Client._wait_for_ack', return_value=None, autospec=True)
+@mock.patch('pycernan.avro.v1.Client._send_exact', return_value=None, autospec=True)
+def test_publish_blob(send_mock, ack_mock, connect_mock, id, order_by, avro_file):
     c = Client()
 
     with open(avro_file, 'rb') as file:
         file_contents = file.read()
 
-    c.publish_blob(file_contents, id=id, order_by=order_by)
+    if id:
+        ack_mock.return_value = struct.pack(">Q", id)
 
+    c.publish_blob(file_contents, id=id, order_by=order_by)
     send_calls = send_mock.mock_calls
     assert(len(send_calls) == 1)
     send_call = send_calls[0]
-    (_, _, payload_raw) = send_call[1]
+    (_self, payload_raw) = send_call[1]
 
     payload = struct.unpack(
         unpack_fmt(len(file_contents)),
@@ -53,3 +57,6 @@ def test_publish_blob(send_mock, connect_mock, id, order_by, avro_file):
 
     # Payload contents should match the avro we sent.
     assert(payload[5] == file_contents)
+
+    if id:
+        assert(len(ack_mock.mock_calls) == 1)
