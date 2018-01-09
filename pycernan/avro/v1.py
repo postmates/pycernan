@@ -70,13 +70,7 @@ class Client(client.Client):
             raise InvalidAckException()
 
     def _send_exact(self, payload):
-        total = 0
-        while total < len(payload):
-            sent = self.sock.send(payload[total:])
-            if sent == 0:
-                raise ConnectionResetException()
-
-            total += sent
+        self.sock.sendall(payload)
 
     def _recv_exact(self, n_bytes):
         buf = bytearray(b'')
