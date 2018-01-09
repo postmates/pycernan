@@ -1,6 +1,3 @@
-import glob
-import json
-
 import mock
 import pytest
 
@@ -21,12 +18,29 @@ USER_SCHEMA = {
 }
 
 
-class DummyClient(pycernan.avro.client.Client):
+class BaseConnectDummyClient(pycernan.avro.client.Client):
+    def publish_blob(self, avro_blob):
+        pass
+
+
+class DummyClient(BaseConnectDummyClient):
     def _connect(self, host, port):
         pass
 
-    def publish_blob(self, avro_blob):
-        pass
+
+class FakeSocket(object):
+    def __init__(self):
+        self.call_args_list = []
+
+    def settimeout(self, *args, **kwargs):
+        self.call_args_list.append(('settimeout', mock.call(*args, **kwargs)))
+
+    def close(self):
+        self.call_args_list.append(('close', mock.call()))
+
+    def _reset_mock(self):
+        self.call_args_list = []
+
 
 @pytest.mark.parametrize("avro_file", settings.test_data)
 def test_publish_file(avro_file):
@@ -63,8 +77,56 @@ def test_publish_bad_datum_empty():
 
 
 def test_publish_empty_batch():
-    schema = "Not a dict"
-
     c = DummyClient()
     with pytest.raises(EmptyBatchException):
         c.publish(USER_SCHEMA, [])
+
+
+@mock.patch('pycernan.avro.client.socket.create_connection', autospec=True)
+def test_creating_a_client_connects_a_socket(m_connect):
+    expected_sock = FakeSocket()
+    m_connect.return_value = expected_sock
+
+    client = BaseConnectDummyClient(
+        host='some fake host',
+        port=31337,
+        connect_timeout=666,
+        publish_timeout=999)
+    assert client.sock == expected_sock
+    assert expected_sock.call_args_list == [('settimeout', mock.call(999))]
+    assert m_connect.call_args_list == [mock.call(('some fake host', 31337), timeout=666)]
+
+
+@mock.patch('pycernan.avro.client.socket.create_connection', autospec=True)
+def test_closing_the_client_closes_the_socket_and_clears_it(m_connect):
+    expected_sock = FakeSocket()
+    m_connect.return_value = expected_sock
+
+    client = BaseConnectDummyClient(
+        host='some fake host',
+        port=31337,
+        connect_timeout=666,
+        publish_timeout=999)
+
+    assert client.sock is not None
+    expected_sock._reset_mock()
+    client.close()
+
+    assert expected_sock.call_args_list == [('close', mock.call())]
+    assert client.sock is None
+
+
+@mock.patch('pycernan.avro.client.socket.create_connection', autospec=True)
+def test_closing_the_client_with_no_socket_does_not_crash(m_connect):
+    expected_sock = FakeSocket()
+    m_connect.return_value = expected_sock
+
+    client = BaseConnectDummyClient(
+        host='some fake host',
+        port=31337,
+        connect_timeout=666,
+        publish_timeout=999)
+    client.close()
+
+    assert client.sock is None
+    client.close()

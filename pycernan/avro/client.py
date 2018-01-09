@@ -13,9 +13,9 @@ from avro.datafile import DataFileWriter
 from pycernan.avro.exceptions import EmptyBatchException
 
 if sys.version_info >= (3, 0):
-    from avro.schema import Parse
+    from avro.schema import Parse                   # pragma: no cover
 else:
-    from avro.schema import parse as Parse
+    from avro.schema import parse as Parse          # pragma: no cover
 
 
 class Client(object):
@@ -90,4 +90,4 @@ class Client(object):
         """
             Version specific payload generation / publication.
         """
-        pass
+        pass  # pragma: no cover
