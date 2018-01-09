@@ -22,9 +22,9 @@ clean-all: clean
 test: unit ;
 
 .PHONY: check
-check: 
-	tox -- --timeout=30 ./tests/unit
+check:
+	tox -- -vvv --timeout=30 ./tests/unit
 
 .PHONY: check-integration
 check-integration:
-	tox -- --timeout=30 ./tests/integration
+	tox -- -vvv --timeout=30 ./tests/integration
