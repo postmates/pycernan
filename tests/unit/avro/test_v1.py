@@ -59,4 +59,4 @@ def test_publish_blob(send_mock, ack_mock, connect_mock, id, order_by, avro_file
     assert(payload[5] == file_contents)
 
     if id:
-        assert ack_mock.called
+        assert(len(ack_mock.mock_calls) == 1)
