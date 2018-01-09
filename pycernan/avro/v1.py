@@ -58,8 +58,7 @@ class Client(client.Client):
         self._send(id, sync, payload)
 
     def _send(self, id, sync, payload):
-        self.sock.send(payload)
-
+        self._send_exact(payload)
         if sync:
             self._wait_for_ack(id)
 
@@ -70,12 +69,22 @@ class Client(client.Client):
         if recv_id != id:
             raise InvalidAckException()
 
+    def _send_exact(self, payload):
+        total = 0
+        while total < len(payload):
+            sent = self.sock.send(payload[total:])
+            if sent == 0:
+                raise ConnectionResetException
+
+            total += sent
+
     def _recv_exact(self, n_bytes):
         buf = bytearray(b'')
         while len(buf) < n_bytes:
-            buf.extend(self.sock.recv(n_bytes - len(buf)))
+            recvd = self.sock.recv(n_bytes - len(buf))
+            if len(recvd) == 0:
+                raise ConnectionResetException
 
-        if len(buf) != n_bytes:
-            raise ConnectionResetException()
+            buf.extend(recvd)
 
         return bytes(buf)
