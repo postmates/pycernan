@@ -38,17 +38,17 @@ The following results were gathered on a t2.micro EC2 instance running:
 
 * A single Cernan (version 0.8.7) instance configured as follows:
 
-```
-directory = "/var/lib/cernan"
-flush-interval = 10
+	```
+	directory = "/var/lib/cernan"
+	flush-interval = 10
 
-[sources]
-  [sources.avro.primary]
-  forwards = ["sinks.null"]
+	[sources]
+	  [sources.avro.primary]
+	  forwards = ["sinks.null"]
 
-[sinks]
-  [sinks.null]
-```
+	[sinks]
+	  [sinks.null]
+	```
 
 * A single-threaded `pycernan.avro.Client` publishing as fast as it can..
 
@@ -58,7 +58,7 @@ All benchmark scenarios measure synchronous publication.  Namely, the round-trip
 
 #### Pregenerated
 
-Avro blobs are pregenerated and published at random.  Data used is the same data used in the unit tests of this project. 
+Avro blobs are pregenerated and published at random.  Data used is the same data used in the unit tests of this project.
 
 ### Results
 
