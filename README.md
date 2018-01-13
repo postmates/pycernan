@@ -32,11 +32,11 @@ Before altering code, install these components by running:
 The above command will install flake8 and configure our custom git hooks
 within your environment.
 
-### Requirements
+### Running Unit Tests
+
+#### Requirements
 
 * Tox
-
-### Running Unit Tests
 
 ```
 make check
