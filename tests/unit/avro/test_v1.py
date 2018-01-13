@@ -27,20 +27,20 @@ def random_id():
     return random.choice([None, random.randrange(2**64)])
 
 
-def random_order_by():
+def random_shard_by():
     return random.choice([None, random.randrange(2**64)])
 
 
 def test_params():
     return [
-        (random_id(), random_order_by(), test_file) for test_file in settings.test_data]
+        (random_id(), random_shard_by(), test_file) for test_file in settings.test_data]
 
 
-@pytest.mark.parametrize("id, order_by, avro_file", test_params())
+@pytest.mark.parametrize("id, shard_by, avro_file", test_params())
 @mock.patch('pycernan.avro.v1.Client._connect', return_value=None, autospec=True)
 @mock.patch('pycernan.avro.v1.Client._wait_for_ack', return_value=None, autospec=True)
 @mock.patch('pycernan.avro.v1.Client._send_exact', return_value=None, autospec=True)
-def test_publish_blob(send_mock, ack_mock, connect_mock, id, order_by, avro_file):
+def test_publish_blob(send_mock, ack_mock, connect_mock, id, shard_by, avro_file):
     c = Client()
 
     with open(avro_file, 'rb') as file:
@@ -49,7 +49,7 @@ def test_publish_blob(send_mock, ack_mock, connect_mock, id, order_by, avro_file
     if id:
         ack_mock.return_value = struct.pack(">Q", id)
 
-    c.publish_blob(file_contents, id=id, order_by=order_by)
+    c.publish_blob(file_contents, id=id, shard_by=shard_by)
     send_calls = send_mock.mock_calls
     assert(len(send_calls) == 1)
     send_call = send_calls[0]
@@ -66,8 +66,8 @@ def test_publish_blob(send_mock, ack_mock, connect_mock, id, order_by, avro_file
     if id:
         assert(payload[3] == id)
 
-    if order_by:
-        assert(payload[4] == _hash_u64(order_by))
+    if shard_by:
+        assert(payload[4] == _hash_u64(shard_by))
 
     # Payload contents should match the avro we sent.
     assert(payload[5] == file_contents)
