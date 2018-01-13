@@ -49,7 +49,7 @@ class Client(client.Client):
                 id : int - Optional identifier for the payload.  If not None, then the publish
                            will be treated as synchronous.  Blocking until Cernan ACKS the id.
                 shard_by : hashable value - Used to allocate the payload into a downstream bucket
-                           (order is only preserved between entries allocated to the same bucket.
+                           (order is only preserved between entries allocated to the same bucket).
         """
         version = self.VERSION
         sync = 1 if id else 0
