@@ -5,7 +5,7 @@ import mock
 import pytest
 
 import settings
-from pycernan.avro.v1 import Client
+from pycernan.avro.v1 import Client, _hash_u64
 from pycernan.avro.exceptions import InvalidAckException, ConnectionResetException
 
 
@@ -67,7 +67,7 @@ def test_publish_blob(send_mock, ack_mock, connect_mock, id, order_by, avro_file
         assert(payload[3] == id)
 
     if order_by:
-        assert(payload[4] == order_by)
+        assert(payload[4] == _hash_u64(order_by))
 
     # Payload contents should match the avro we sent.
     assert(payload[5] == file_contents)

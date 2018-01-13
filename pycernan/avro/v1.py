@@ -8,6 +8,10 @@ from pycernan.avro import client
 from pycernan.avro.exceptions import InvalidAckException, ConnectionResetException
 
 
+def _hash_u64(value):
+    return hash(value) % 2**64
+
+
 def _rand_u64():
     return random.randrange(2**64)
 
@@ -44,13 +48,12 @@ class Client(client.Client):
             Kwargs:
                 id : int - Optional identifier for the payload.  If not None, then the publish
                            will be treated as synchronous.  Blocking until Cernan ACKS the id.
-
-                order_by : int - Value used to order the event in downstream buckets.
+                order_by : hashable value - Value whose hash is used to order the payload within downstream buckets.
         """
         version = self.VERSION
         sync = 1 if id else 0
         id = int(id) if id else _rand_u64()
-        order_by = order_by or _rand_u64()
+        order_by = _hash_u64(order_by) if order_by else _rand_u64()
         header = struct.pack(">LLQQ", version, sync, id, order_by)
         payload_len = len(header) + len(avro_blob)
         payload = struct.pack(">L", payload_len) + header + avro_blob
