@@ -1,5 +1,7 @@
 # pycernan
 
+[![Build Status](https://travis-ci.org/postmates/pycernan.svg?branch=master)](https://travis-ci.org/postmates/pycernan) [![Codecov](https://img.shields.io/codecov/c/github/postmates/pycernan.svg)](https://codecov.io/gh/postmates/pycernan)
+
 A Python client for [Cernan](https://github.com/postmates/cernan).
 
 ## Available Clients
