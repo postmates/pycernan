@@ -49,7 +49,8 @@ def test_publish_blob(send_mock, ack_mock, connect_mock, id, shard_by, avro_file
     if id:
         ack_mock.return_value = struct.pack(">Q", id)
 
-    c.publish_blob(file_contents, id=id, shard_by=shard_by)
+    sync = id is not None
+    c.publish_blob(file_contents, sync=sync, id=id, shard_by=shard_by)
     send_calls = send_mock.mock_calls
     assert(len(send_calls) == 1)
     send_call = send_calls[0]
@@ -61,7 +62,7 @@ def test_publish_blob(send_mock, ack_mock, connect_mock, id, shard_by, avro_file
 
     assert((len(payload_raw) - 4) == payload[0])  # Length of the binary blob
     assert(payload[1] == 1)  # Version number
-    assert(payload[2] == (1 if id else 0))  # Control
+    assert(payload[2] == (1 if sync else 0))  # Control
 
     if id:
         assert(payload[3] == id)
