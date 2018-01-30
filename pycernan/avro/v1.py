@@ -23,7 +23,7 @@ class Client(client.Client):
 
     VERSION = 1
 
-    def publish_blob(self, avro_blob, id=None, shard_by=None):
+    def publish_blob(self, avro_blob, sync=True, id=None, shard_by=None):
         """
             Publishes an length prefixed avro payload to a V1 Avro source.
 
@@ -46,13 +46,13 @@ class Client(client.Client):
 
 
             Kwargs:
-                id : int - Optional identifier for the payload.  If not None, then the publish
-                           will be treated as synchronous.  Blocking until Cernan ACKS the id.
+                sync : bool - Wait for acknowledgment that the payload has been published?  Default = True.
+                id : int - Optional identifier for the payload.
                 shard_by : hashable value - Used to allocate the payload into a downstream bucket
                            (order is only preserved between entries allocated to the same bucket).
         """
         version = self.VERSION
-        sync = 1 if id else 0
+        sync = 1 if sync else 0
         id = int(id) if id else _rand_u64()
         shard_by = _hash_u64(shard_by) if shard_by else _rand_u64()
         header = struct.pack(">LLQQ", version, sync, id, shard_by)

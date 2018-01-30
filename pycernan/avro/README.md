@@ -29,11 +29,11 @@ records = [
 
 client = Client() #Connects to localhost:2002 by default.
 
-# Async publish records.
+# Sync publish records.
 client.publish(schema, records)
 
-# Sync publish records with a payload id of 1.
-client.publish(schema, records, id=1)
+# Async publish records.
+client.publish(schema, records, sync=False)
 ```
 
 ## Performance
