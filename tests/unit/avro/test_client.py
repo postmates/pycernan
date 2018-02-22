@@ -52,7 +52,8 @@ def test_publish_file(avro_file):
     c.publish_file(avro_file)
 
 
-def test_publish():
+@pytest.mark.parametrize('ephemeral', [True, False])
+def test_publish(ephemeral):
     user = {
         'name': 'Foo Bar Matic',
         'favorite_number': 24,
@@ -64,6 +65,9 @@ def test_publish():
         buf.write(avro_blob)
         buf.seek(0)
         with DataFileReader(buf, DatumReader()) as reader:
+            get_meta = getattr(reader, 'get_meta', None) or reader.GetMeta
+            value = get_meta('postmates.storage.ephemeral')
+            assert value is (b'1' if ephemeral else None)
             records = [r for r in reader]
             assert records == [user]
 
@@ -72,7 +76,7 @@ def test_publish():
 
     c = DummyClient()
     c.publish_blob = m_publish_blob
-    c.publish(USER_SCHEMA, [user])
+    c.publish(USER_SCHEMA, [user], ephemeral_storage=ephemeral)
     assert m_publish_blob.call_count == 1
 
 
@@ -147,29 +151,3 @@ def test_closing_the_client_with_no_socket_does_not_crash(m_connect):
 
     assert client.sock is None
     client.close()
-
-
-@pytest.mark.parametrize('ephemeral', [True, False])
-def test_ephemeral_storage(ephemeral):
-    def inspect_publish_blob(avro_blob):
-        buf = BytesIO()
-        buf.write(avro_blob)
-        buf.seek(0)
-        with DataFileReader(buf, DatumReader()) as reader:
-            get_meta = getattr(reader, 'get_meta', None) or reader.GetMeta
-            value = get_meta('postmates.storage.ephemeral')
-            assert value is (b'1' if ephemeral else None)
-
-    user = {
-        'name': 'Foo Bar Matic',
-        'favorite_number': 24,
-        'favorite_color': 'Nonyabusiness',
-    }
-
-    m_publish_blob = mock.MagicMock()
-    m_publish_blob.side_effect = inspect_publish_blob
-
-    c = DummyClient()
-    c.publish_blob = m_publish_blob
-    c.publish(USER_SCHEMA, [user], ephemeral_storage=ephemeral)
-    assert m_publish_blob.call_count == 1
