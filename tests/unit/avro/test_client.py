@@ -1,9 +1,13 @@
+from io import BytesIO
 import mock
 import pytest
 
 import pycernan
 import settings
 from pycernan.avro.exceptions import SchemaParseException, DatumTypeException, EmptyBatchException
+
+from avro.io import DatumReader
+from avro.datafile import DataFileReader
 
 
 USER_SCHEMA = {
@@ -55,8 +59,21 @@ def test_publish():
         'favorite_color': 'Nonyabusiness',
     }
 
+    def inspect_publish_blob(avro_blob):
+        buf = BytesIO()
+        buf.write(avro_blob)
+        buf.seek(0)
+        with DataFileReader(buf, DatumReader()) as reader:
+            records = [r for r in reader]
+            assert records == [user]
+
+    m_publish_blob = mock.MagicMock()
+    m_publish_blob.side_effect = inspect_publish_blob
+
     c = DummyClient()
+    c.publish_blob = m_publish_blob
     c.publish(USER_SCHEMA, [user])
+    assert m_publish_blob.call_count == 1
 
 
 def test_publish_bad_schema():
@@ -130,3 +147,29 @@ def test_closing_the_client_with_no_socket_does_not_crash(m_connect):
 
     assert client.sock is None
     client.close()
+
+
+@pytest.mark.parametrize('ephemeral', [True, False])
+def test_ephemeral_storage(ephemeral):
+    def inspect_publish_blob(avro_blob):
+        buf = BytesIO()
+        buf.write(avro_blob)
+        buf.seek(0)
+        with DataFileReader(buf, DatumReader()) as reader:
+            get_meta = getattr(reader, 'get_meta', None) or reader.GetMeta
+            value = get_meta('postmates.storage.ephemeral')
+            assert value is (b'1' if ephemeral else None)
+
+    user = {
+        'name': 'Foo Bar Matic',
+        'favorite_number': 24,
+        'favorite_color': 'Nonyabusiness',
+    }
+
+    m_publish_blob = mock.MagicMock()
+    m_publish_blob.side_effect = inspect_publish_blob
+
+    c = DummyClient()
+    c.publish_blob = m_publish_blob
+    c.publish(USER_SCHEMA, [user], ephemeral_storage=ephemeral)
+    assert m_publish_blob.call_count == 1

@@ -47,7 +47,7 @@ class Client(object):
             self.sock.close()
             self.sock = None
 
-    def publish(self, schema_map, batch, **kwargs):
+    def publish(self, schema_map, batch, ephemeral_storage=False, **kwargs):
         """
             Publishes a batch of records corresponding to the given schema.
 
@@ -56,7 +56,9 @@ class Client(object):
                 batch: list - List of Avro records (as dicts).
 
             Kwargs:
-                Version specific options.  See extending object.
+                ephemeral_storage: bool - Flag to indicate whether the batch
+                                          should be stored long-term.
+                Others  are version specific options.  See extending object.
         """
         if not batch:
             raise EmptyBatchException()
@@ -65,9 +67,13 @@ class Client(object):
 
         avro_buf = BytesIO()
         with DataFileWriter(avro_buf, DatumWriter(), parsed_schema, 'deflate') as writer:
+            if ephemeral_storage:
+                # handle py2/py3 interface discrepancy
+                set_meta = getattr(writer, 'set_meta', None) or writer.SetMeta
+                set_meta('postmates.storage.ephemeral', '1')
             for record in batch:
                 writer.append(record)
-
+            writer.flush()
             self.publish_blob(avro_buf.getvalue(), **kwargs)
 
     def publish_file(self, file_path, **kwargs):
