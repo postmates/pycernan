@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="pycernan",
-    version="0.0.1",
+    version="0.0.2",
     author="John Koenig",
     author_email="john@postmates.com",
     description="Python client for Cernan.",
