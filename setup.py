@@ -1,6 +1,3 @@
-import os
-import sys
-
 from setuptools import setup, find_packages
 
 setup(
@@ -15,6 +12,7 @@ setup(
     packages=find_packages(),
     tests_require=[
         'pytest',
+        'pytest-cov',
         'pytest-timeout',
         'mock>=1.0.1',
     ],
