@@ -2,8 +2,8 @@ from io import BytesIO
 import mock
 import pytest
 
-import pycernan
 import settings
+from pycernan.avro import BaseDummyClient, DummyClient
 from pycernan.avro.exceptions import SchemaParseException, DatumTypeException, EmptyBatchException
 
 from avro.io import DatumReader
@@ -20,16 +20,6 @@ USER_SCHEMA = {
         {"name": "favorite_color", "type": ["string", "null"]}
     ]
 }
-
-
-class BaseConnectDummyClient(pycernan.avro.client.Client):
-    def publish_blob(self, avro_blob):
-        pass
-
-
-class DummyClient(BaseConnectDummyClient):
-    def _connect(self, host, port):
-        pass
 
 
 class FakeSocket(object):
@@ -108,7 +98,7 @@ def test_creating_a_client_connects_a_socket(m_connect):
     expected_sock = FakeSocket()
     m_connect.return_value = expected_sock
 
-    client = BaseConnectDummyClient(
+    client = BaseDummyClient(
         host='some fake host',
         port=31337,
         connect_timeout=666,
@@ -123,7 +113,7 @@ def test_closing_the_client_closes_the_socket_and_clears_it(m_connect):
     expected_sock = FakeSocket()
     m_connect.return_value = expected_sock
 
-    client = BaseConnectDummyClient(
+    client = BaseDummyClient(
         host='some fake host',
         port=31337,
         connect_timeout=666,
@@ -142,7 +132,7 @@ def test_closing_the_client_with_no_socket_does_not_crash(m_connect):
     expected_sock = FakeSocket()
     m_connect.return_value = expected_sock
 
-    client = BaseConnectDummyClient(
+    client = BaseDummyClient(
         host='some fake host',
         port=31337,
         connect_timeout=666,
