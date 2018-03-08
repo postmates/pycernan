@@ -36,6 +36,15 @@ client.publish(schema, records)
 client.publish(schema, records, sync=False)
 ```
 
+## Configuration
+
+### Environment Variables
+
+| Variable              | Description                                                       | Default       |
+| --------------------- | ----------------------------------------------------------------- | ------------- |
+| PYCERNAN_AVRO_HOST    | Host to publish events to.  Takes precedence over PYCERNAN_HOST.  | PYCERNAN_HOST |
+| PYCERNAN_AVRO_PORT    | Port cernan's avro source is listening on.                        | 2002          |
+
 ## Performance
 
 The following results were gathered on a t2.micro EC2 instance running:

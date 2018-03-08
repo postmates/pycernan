@@ -5,6 +5,8 @@ import json
 import socket
 import sys
 
+import pycernan.avro.config
+
 from abc import ABCMeta, abstractmethod
 from io import BytesIO
 
@@ -25,7 +27,10 @@ class Client(object):
     __metaclass__ = ABCMeta
     sock = None
 
-    def __init__(self, host="127.0.0.1", port=2002, connect_timeout=50, publish_timeout=10):
+    def __init__(self, host=None, port=None, connect_timeout=50, publish_timeout=10):
+        host = host or pycernan.avro.config.host()
+        port = port or pycernan.avro.config.port()
+
         self.connect_timeout = connect_timeout
         self.publish_timeout = publish_timeout
 
