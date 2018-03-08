@@ -4,7 +4,7 @@ import pycernan.config
 
 
 def host():
-    return os.getenv("PYCERNAN_AVRO_HOST", None) or pycernan.config.host()
+    return os.getenv("PYCERNAN_AVRO_HOST", pycernan.config.host())
 
 
 def port():
