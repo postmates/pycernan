@@ -19,6 +19,14 @@ on your environment:
 make install
 ```
 
+## Configuration
+
+### Environment Variables
+
+| Variable      | Description           | Default       |
+| ------------- | --------------------- | ------------- |
+| PYCERNAN_HOST | Cernan host.          | "localhost"   |
+
 ## Developing
 
 ### Etiquette
