@@ -1,23 +1,14 @@
 """
     Base Avro client from which all other clients derive.
 """
-import json
 import socket
-import sys
 
 import pycernan.avro.config
 
 from abc import ABCMeta, abstractmethod
-from io import BytesIO
 
-from avro.io import DatumWriter
-from avro.datafile import DataFileWriter
 from pycernan.avro.exceptions import EmptyBatchException
-
-if sys.version_info >= (3, 0):
-    from avro.schema import Parse                   # pragma: no cover
-else:
-    from avro.schema import parse as Parse          # pragma: no cover
+from pycernan.avro.serde import serialize
 
 
 class Client(object):
@@ -68,18 +59,8 @@ class Client(object):
         if not batch:
             raise EmptyBatchException()
 
-        parsed_schema = Parse(json.dumps(schema_map))
-
-        avro_buf = BytesIO()
-        with DataFileWriter(avro_buf, DatumWriter(), parsed_schema, 'deflate') as writer:
-            if ephemeral_storage:
-                # handle py2/py3 interface discrepancy
-                set_meta = getattr(writer, 'set_meta', None) or writer.SetMeta
-                set_meta('postmates.storage.ephemeral', '1')
-            for record in batch:
-                writer.append(record)
-            writer.flush()
-            self.publish_blob(avro_buf.getvalue(), **kwargs)
+        blob = serialize(schema_map, batch, ephemeral_storage)
+        self.publish_blob(blob, **kwargs)
 
     def publish_file(self, file_path, **kwargs):
         """
