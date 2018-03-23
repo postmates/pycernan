@@ -22,25 +22,22 @@ USER_SCHEMA = {
 
 @pytest.mark.parametrize('ephemeral', [True, False])
 def test_serialize(ephemeral):
-    def inspect_publish_blob(avro_blob):
-        user = {
-            'name': 'Foo Bar Matic',
-            'favorite_number': 24,
-            'favorite_color': 'Nonyabusiness',
-        }
+    user = {
+        'name': 'Foo Bar Matic',
+        'favorite_number': 24,
+        'favorite_color': 'Nonyabusiness',
+    }
 
-        buf = BytesIO()
-        buf.write(avro_blob)
-        buf.seek(0)
-        with DataFileReader(buf, DatumReader()) as reader:
-            get_meta = getattr(reader, 'get_meta', None) or reader.GetMeta
-            value = get_meta('postmates.storage.ephemeral')
-            assert value is (b'1' if ephemeral else None)
-            records = [r for r in reader]
-            assert records == [user]
-
-        blob = serialize(USER_SCHEMA, [user], ephemeral_storage=ephemeral)
-        inspect_publish_blob(blob)
+    avro_blob = serialize(USER_SCHEMA, [user], ephemeral_storage=ephemeral)
+    buf = BytesIO()
+    buf.write(avro_blob)
+    buf.seek(0)
+    with DataFileReader(buf, DatumReader()) as reader:
+        get_meta = getattr(reader, 'get_meta', None) or reader.GetMeta
+        value = get_meta('postmates.storage.ephemeral')
+        assert value is (b'1' if ephemeral else None)
+        records = [r for r in reader]
+        assert records == [user]
 
 
 def test_bad_schema():
