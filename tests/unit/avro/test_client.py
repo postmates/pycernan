@@ -1,13 +1,13 @@
-from io import BytesIO
 import mock
 import pytest
+
+from avro.io import DatumReader
+from avro.datafile import DataFileReader
+from io import BytesIO
 
 import settings
 from pycernan.avro import BaseDummyClient, DummyClient
 from pycernan.avro.exceptions import SchemaParseException, DatumTypeException, EmptyBatchException
-
-from avro.io import DatumReader
-from avro.datafile import DataFileReader
 
 
 USER_SCHEMA = {
