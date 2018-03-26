@@ -1,13 +1,9 @@
-from io import BytesIO
 import mock
 import pytest
 
 import settings
 from pycernan.avro import BaseDummyClient, DummyClient
 from pycernan.avro.exceptions import SchemaParseException, DatumTypeException, EmptyBatchException
-
-from avro.io import DatumReader
-from avro.datafile import DataFileReader
 
 
 USER_SCHEMA = {
@@ -42,32 +38,27 @@ def test_publish_file(avro_file):
     c.publish_file(avro_file)
 
 
+@mock.patch('pycernan.avro.client.serialize', autospec=True)
 @pytest.mark.parametrize('ephemeral', [True, False])
-def test_publish(ephemeral):
+def test_publish(m_serialize, ephemeral):
+    expected_serialize_result = mock.MagicMock()
+    m_serialize.return_value = expected_serialize_result
+
     user = {
         'name': 'Foo Bar Matic',
         'favorite_number': 24,
         'favorite_color': 'Nonyabusiness',
     }
 
-    def inspect_publish_blob(avro_blob):
-        buf = BytesIO()
-        buf.write(avro_blob)
-        buf.seek(0)
-        with DataFileReader(buf, DatumReader()) as reader:
-            get_meta = getattr(reader, 'get_meta', None) or reader.GetMeta
-            value = get_meta('postmates.storage.ephemeral')
-            assert value is (b'1' if ephemeral else None)
-            records = [r for r in reader]
-            assert records == [user]
-
-    m_publish_blob = mock.MagicMock()
-    m_publish_blob.side_effect = inspect_publish_blob
-
     c = DummyClient()
-    c.publish_blob = m_publish_blob
-    c.publish(USER_SCHEMA, [user], ephemeral_storage=ephemeral)
-    assert m_publish_blob.call_count == 1
+    with mock.patch.object(c, 'publish_blob', autospec=True) as m_publish_blob:
+        c.publish(USER_SCHEMA, [user], ephemeral_storage=ephemeral, kwarg1='one', kwarg2='two')
+    assert m_serialize.call_args_list == [
+        mock.call(USER_SCHEMA, [user], ephemeral)
+    ]
+    assert m_publish_blob.call_args_list == [
+        mock.call(expected_serialize_result, kwarg1='one', kwarg2='two')
+    ]
 
 
 def test_publish_bad_schema():

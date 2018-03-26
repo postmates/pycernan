@@ -2,7 +2,7 @@ from pycernan.avro.client import Client
 
 
 class BaseDummyClient(Client):
-    def publish_blob(self, avro_blob):
+    def publish_blob(self, avro_blob, **kwargs):
         pass
 
 

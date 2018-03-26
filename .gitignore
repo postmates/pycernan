@@ -108,3 +108,4 @@ src/
 .idea
 
 tests/data/
+.pytest_cache
