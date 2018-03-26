@@ -6,7 +6,7 @@ from avro.datafile import DataFileReader
 from io import BytesIO
 
 from pycernan.avro.exceptions import SchemaParseException, DatumTypeException
-from pycernan.avro.serde import Parse, serialize
+from pycernan.avro.serde import parse, serialize
 
 
 USER_SCHEMA = {
@@ -21,7 +21,7 @@ USER_SCHEMA = {
 }
 
 
-@pytest.mark.parametrize('schema', [USER_SCHEMA, Parse(json.dumps(USER_SCHEMA))])
+@pytest.mark.parametrize('schema', [USER_SCHEMA, parse(json.dumps(USER_SCHEMA))])
 @pytest.mark.parametrize('ephemeral', [True, False])
 def test_serialize(ephemeral, schema):
     user = {
