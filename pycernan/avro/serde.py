@@ -5,10 +5,11 @@ from avro.io import DatumWriter
 from avro.datafile import DataFileWriter
 from io import BytesIO
 
+
 if sys.version_info >= (3, 0):
-    from avro.schema import Parse                   # pragma: no cover
+    from avro.schema import Parse as parse      # pragma: no cover
 else:
-    from avro.schema import parse as Parse          # pragma: no cover
+    from avro.schema import parse               # pragma: no cover
 
 
 def serialize(schema_map, batch, ephemeral_storage=False):
@@ -17,7 +18,7 @@ def serialize(schema_map, batch, ephemeral_storage=False):
         Avro object container file.
 
         Args:
-            schema_map: dict - Avro schema defintion.
+            schema_map: dict or pycernan.avro.serde.parse - Avro schema defintion.
             batch: list - List of Avro types.
 
         Kwargs:
@@ -27,7 +28,11 @@ def serialize(schema_map, batch, ephemeral_storage=False):
         Returns:
             bytes
     """
-    parsed_schema = Parse(json.dumps(schema_map))
+    if isinstance(schema_map, dict):
+        parsed_schema = parse(json.dumps(schema_map))
+    else:
+        parsed_schema = schema_map
+
     avro_buf = BytesIO()
     with DataFileWriter(avro_buf, DatumWriter(), parsed_schema, 'deflate') as writer:
         if ephemeral_storage:
