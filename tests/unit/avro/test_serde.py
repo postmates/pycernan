@@ -1,3 +1,4 @@
+import json
 import pytest
 
 from avro.io import DatumReader
@@ -5,7 +6,7 @@ from avro.datafile import DataFileReader
 from io import BytesIO
 
 from pycernan.avro.exceptions import SchemaParseException, DatumTypeException
-from pycernan.avro.serde import serialize
+from pycernan.avro.serde import Parse, serialize
 
 
 USER_SCHEMA = {
@@ -20,15 +21,16 @@ USER_SCHEMA = {
 }
 
 
+@pytest.mark.parametrize('schema', [USER_SCHEMA, Parse(json.dumps(USER_SCHEMA))])
 @pytest.mark.parametrize('ephemeral', [True, False])
-def test_serialize(ephemeral):
+def test_serialize(ephemeral, schema):
     user = {
         'name': 'Foo Bar Matic',
         'favorite_number': 24,
         'favorite_color': 'Nonyabusiness',
     }
 
-    avro_blob = serialize(USER_SCHEMA, [user], ephemeral_storage=ephemeral)
+    avro_blob = serialize(schema, [user], ephemeral_storage=ephemeral)
     buf = BytesIO()
     buf.write(avro_blob)
     buf.seek(0)
@@ -41,7 +43,7 @@ def test_serialize(ephemeral):
 
 
 def test_bad_schema():
-    schema = "Not a dict"
+    schema = {}
     user = {}
     with pytest.raises(SchemaParseException):
         serialize(schema, [user])

@@ -17,7 +17,7 @@ def serialize(schema_map, batch, ephemeral_storage=False):
         Avro object container file.
 
         Args:
-            schema_map: dict - Avro schema defintion.
+            schema_map: dict or avro.schema.Parse - Avro schema defintion.
             batch: list - List of Avro types.
 
         Kwargs:
@@ -27,7 +27,11 @@ def serialize(schema_map, batch, ephemeral_storage=False):
         Returns:
             bytes
     """
-    parsed_schema = Parse(json.dumps(schema_map))
+    if isinstance(schema_map, dict):
+        parsed_schema = Parse(json.dumps(schema_map))
+    else:
+        parsed_schema = schema_map
+
     avro_buf = BytesIO()
     with DataFileWriter(avro_buf, DatumWriter(), parsed_schema, 'deflate') as writer:
         if ephemeral_storage:

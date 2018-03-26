@@ -62,7 +62,7 @@ def test_publish(m_serialize, ephemeral):
 
 
 def test_publish_bad_schema():
-    schema = "Not a dict"
+    schema = {}
     user = {}
 
     c = DummyClient()
