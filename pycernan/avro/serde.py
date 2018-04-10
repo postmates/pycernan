@@ -59,6 +59,7 @@ def deserialize(avro_bytes):
         buffer = BytesIO(avro_bytes)
     else:
         raise ValueError("avro_bytes must be a bytes object or file-like io object")
+
     with DataFileReader(buffer, DatumReader()) as reader:
         records = [r for r in reader]
     return records
