@@ -55,6 +55,12 @@ def test_serialize_and_deserialize():
     assert len(test_records) == 1
     assert test_records[0] == user
 
+    test_buffer = BytesIO(avro_blob)
+    test_records2 = deserialize(test_buffer)
+    assert isinstance(test_records2, list)
+    assert len(test_records2) == 1
+    assert test_records2[0] == user
+
 
 def test_bad_schema():
     schema = {}
@@ -67,3 +73,8 @@ def test_bad_datum_empty():
     user = {}
     with pytest.raises(DatumTypeException):
         serialize(USER_SCHEMA, [user])
+
+
+def test_bad_arg_to_deserialize():
+    with pytest.raises(ValueError):
+        deserialize(47)
