@@ -1,9 +1,9 @@
 import json
 import sys
 
-from avro.io import DatumWriter
-from avro.datafile import DataFileWriter
-from io import BytesIO
+from avro.io import DatumWriter, DatumReader
+from avro.datafile import DataFileWriter, DataFileReader
+from io import BytesIO, IOBase
 
 
 if sys.version_info >= (3, 0):
@@ -47,3 +47,19 @@ def serialize(schema_map, batch, ephemeral_storage=False):
         encoded = avro_buf.getvalue()
 
     return encoded
+
+
+def deserialize(avro_bytes):
+    """
+        Deserialize encoded avro bytes.
+    """
+    if isinstance(avro_bytes, IOBase):
+        buffer = avro_bytes
+    elif isinstance(avro_bytes, bytes):
+        buffer = BytesIO(avro_bytes)
+    else:
+        raise ValueError("avro_bytes must be a bytes object or file-like io object")
+
+    with DataFileReader(buffer, DatumReader()) as reader:
+        records = [r for r in reader]
+    return records
