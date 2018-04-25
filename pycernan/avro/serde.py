@@ -60,10 +60,8 @@ def deserialize(avro_bytes, decode_schema=False):
     else:
         raise ValueError("avro_bytes must be a bytes object or file-like io object")
 
-    metadata = None
     with DataFileReader(buffer, DatumReader()) as reader:
-        if metadata is None:
-            metadata = reader.meta
+        metadata = reader.meta
         records = [r for r in reader]
 
     if decode_schema:
