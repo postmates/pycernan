@@ -49,7 +49,7 @@ def serialize(schema_map, batch, ephemeral_storage=False):
     return encoded
 
 
-def deserialize(avro_bytes):
+def deserialize(avro_bytes, decode_schema=False):
     """
         Deserialize encoded avro bytes.
     """
@@ -61,5 +61,10 @@ def deserialize(avro_bytes):
         raise ValueError("avro_bytes must be a bytes object or file-like io object")
 
     with DataFileReader(buffer, DatumReader()) as reader:
+        metadata = reader.meta
         records = [r for r in reader]
-    return records
+
+    if decode_schema:
+        metadata['avro.schema'] = json.loads(metadata['avro.schema'])
+
+    return metadata, records
