@@ -72,6 +72,6 @@ def deserialize(avro_bytes, decode_schema=False):
         records = [r for r in reader]
 
     if decode_schema:
-        metadata['avro.schema'] = json.loads(metadata['avro.schema'])
+        metadata['avro.schema'] = json.loads(metadata['avro.schema'].decode('utf-8'))
 
     return metadata, records
