@@ -21,6 +21,19 @@ USER_SCHEMA = {
 }
 
 
+def test_serialize_bad_schema():
+    schema = {}
+    user = {}
+    with pytest.raises(SchemaParseException):
+        serialize(schema, [user])
+
+
+def test_serialize_bad_datum_empty():
+    user = {}
+    with pytest.raises(DatumTypeException):
+        serialize(USER_SCHEMA, [user])
+
+
 @pytest.mark.parametrize('schema', [USER_SCHEMA, parse(json.dumps(USER_SCHEMA))])
 @pytest.mark.parametrize('ephemeral', [True, False])
 def test_serialize(ephemeral, schema):
@@ -71,19 +84,24 @@ def test_serialize_and_deserialize():
     assert test_records2[0] == user
 
 
-def test_bad_schema():
-    schema = {}
-    user = {}
-    with pytest.raises(SchemaParseException):
-        serialize(schema, [user])
+def test_serialize_with_metadata():
+    metadata = {
+        'foo.bar': 10,
+        'foo.baz': 'foomatic',
+    }
+    user = {
+        'name': 'Foo Bar Matic',
+        'favorite_number': 24,
+        'favorite_color': 'Nonyabusiness',
+    }
+
+    avro_blob = serialize(USER_SCHEMA, [user], **metadata)
+    (test_meta, test_records) = deserialize(avro_blob)
+
+    for k, v, in metadata.items():
+        assert test_meta[k] == str(metadata[k]).encode()
 
 
-def test_bad_datum_empty():
-    user = {}
-    with pytest.raises(DatumTypeException):
-        serialize(USER_SCHEMA, [user])
-
-
-def test_bad_arg_to_deserialize():
+def test_deserialize_bad_arg_to_deserialize():
     with pytest.raises(ValueError):
         deserialize(47)
