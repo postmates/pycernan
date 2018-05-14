@@ -23,6 +23,7 @@ setup(
         ":python_version>='3.0'": ["avro-python3"],
     },
     dependency_links=[
+        "git+git://github.com/postmates/avro.git#subdirectory=lang/py"
     ],
     include_package_data=True,
     scripts=[],
