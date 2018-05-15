@@ -1,3 +1,2 @@
 --index-url https://pypi.python.org/simple/
-git+git://github.com/postmates/avro.git#subdirectory=lang/py
--e .
+-e . --process-dependency-links

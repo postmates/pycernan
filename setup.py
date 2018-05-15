@@ -19,11 +19,11 @@ setup(
     install_requires=[
     ],
     extras_require={
-        ":python_version<'3.0'": ["avro"],
+        ":python_version<'3.0'": ["avro==1.8.2+postmates.1"],
         ":python_version>='3.0'": ["avro-python3"],
     },
     dependency_links=[
-        "git+git://github.com/postmates/avro.git#subdirectory=lang/py"
+        "https://github.com/postmates/avro/tarball/version-bump#subdirectory=lang/py&egg=avro-1.8.2+postmates.1",
     ],
     include_package_data=True,
     scripts=[],
