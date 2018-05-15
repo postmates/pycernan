@@ -6,6 +6,15 @@
 * Publish Avro from: dicts, files, and raw blobs.
 * Synchronous and asynchronous publication.
 
+## Note on Avro Library
+* Pycernan installs the [Postmates fork](https://github.com/postmates/avro) of the Apache Avro Library
+* The Python2 version of the Postmates fork currently maps several native Python types to Avro logical types:
+  * Python `datetime.datetime` objects are mapped to Avro types `{'logicalType': 'timestamp-millis', 'type': 'long'}` or `{'logicalType': 'timestamp-micros', 'type': 'long'}`, depending on the Avro schema.
+  * Python `datetime.time` objects are mapped to Avro types `{'logicalType': 'time-millis', 'type': 'int'}` or `{'logicalType': 'time-micros', 'type': 'long'}`, depending on the Avro schema.
+  * Python `datetime.date` objects are mapped to `{'logicalType': 'date', 'type': 'int'}`.
+  * Python `decimal.Decimal` objects are mapped to `{'logicalType': 'decimal', 'type': 'string'}`.
+* The Python3 version of the Postmates fork is currently identical to the upstream Apache repo.
+
 ## Usage
 
 ```python
@@ -78,4 +87,3 @@ Avro blobs are pregenerated and published at random.  Data used is the same data
 |           Scenario              |         Throughput         |     Latency Min/Mean/Max (microseconds)   |    Limiting Factor     |
 |:-------------------------------:|:--------------------------:|:-----------------------------------------:|:-----------------------|
 |  [Pregenerated](#pregenerated)  |   ~1.4k blobs / second     |          107 / 462 / 7.6k                 |          CPU           |
-
