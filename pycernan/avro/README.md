@@ -6,15 +6,6 @@
 * Publish Avro from: dicts, files, and raw blobs.
 * Synchronous and asynchronous publication.
 
-## Note on Avro Library
-* Pycernan installs the [Postmates fork](https://github.com/postmates/avro) of the Apache Avro Library
-* The Python2 version of the Postmates fork currently maps several native Python types to Avro logical types:
-  * Python `datetime.datetime` objects are mapped to Avro types `{'logicalType': 'timestamp-millis', 'type': 'long'}` or `{'logicalType': 'timestamp-micros', 'type': 'long'}`, depending on the Avro schema.
-  * Python `datetime.time` objects are mapped to Avro types `{'logicalType': 'time-millis', 'type': 'int'}` or `{'logicalType': 'time-micros', 'type': 'long'}`, depending on the Avro schema.
-  * Python `datetime.date` objects are mapped to `{'logicalType': 'date', 'type': 'int'}`.
-  * Python `decimal.Decimal` objects are mapped to `{'logicalType': 'decimal', 'type': 'string'}`.
-* The Python3 version of the Postmates fork is currently identical to the upstream Apache repo.
-
 ## Usage
 
 ```python
@@ -44,6 +35,15 @@ client.publish(schema, records)
 # Async publish records.
 client.publish(schema, records, sync=False)
 ```
+
+## Note on Avro Library
+* Pycernan installs the [Postmates fork](https://github.com/postmates/avro) of the Apache Avro Library
+* The Python2 version of the Postmates fork currently maps several native Python types to Avro logical types:
+  * Python `datetime.datetime` objects are mapped to Avro types `{'logicalType': 'timestamp-millis', 'type': 'long'}` or `{'logicalType': 'timestamp-micros', 'type': 'long'}`, depending on the Avro schema.
+  * Python `datetime.time` objects are mapped to Avro types `{'logicalType': 'time-millis', 'type': 'int'}` or `{'logicalType': 'time-micros', 'type': 'long'}`, depending on the Avro schema.
+  * Python `datetime.date` objects are mapped to `{'logicalType': 'date', 'type': 'int'}`.
+  * Python `decimal.Decimal` objects are mapped to `{'logicalType': 'decimal', 'type': 'string'}`.
+* The Python3 version of the Postmates fork is currently identical to the upstream Apache repo.
 
 ## Configuration
 
