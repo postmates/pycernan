@@ -1,5 +1,6 @@
 import json
 import pytest
+import types
 
 from avro.io import DatumReader
 from avro.datafile import DataFileReader
@@ -85,11 +86,9 @@ def test_serialize_and_deserialize():
 
     # Ensure deserialize skips decoding values when instructed.
     test_buffer = BytesIO(avro_blob)
-    test_meta, test_datafile = deserialize(test_buffer, decode_values=False)
-    assert isinstance(test_datafile, DataFileReader)
-    with test_datafile:
-        test_datafile_contents = [r for r in test_datafile]
-    assert test_datafile_contents == [user]
+    test_meta, test_generator = deserialize(test_buffer, decode_values=False)
+    assert isinstance(test_generator, types.GeneratorType)
+    assert [value for value in test_generator] == [user]
 
 
 def test_serialize_with_metadata():
