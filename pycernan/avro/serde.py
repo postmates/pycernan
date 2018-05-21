@@ -59,7 +59,27 @@ def serialize(schema_map, batch, ephemeral_storage=False, **metadata):
 def deserialize(avro_bytes, decode_schema=False):
     """
         Deserialize encoded avro bytes.
+
+        Args:
+            avro_bytes: IOBase | bytes - Avro blob to decode.
+
+        Kwargs:
+            decode_schema: Bool - Load metadata['avro.schema'] as JSON?.  Default = False.
+
+        Returns:
+            (metadata, values) where:
+                metadata: dict - Avro metadata as raw bytes.  When decode_schema is True,
+                    the key 'avro.schema' value will be loaded as JSON.
+
+                values: generator - Generator for values corresponding to the schema contained
+                    in metadata.
+
     """
+    def _avro_generator(datafile_reader):
+        with datafile_reader:
+            for value in datafile_reader:
+                yield value
+
     if isinstance(avro_bytes, IOBase):
         buffer = avro_bytes
     elif isinstance(avro_bytes, bytes):
@@ -67,11 +87,11 @@ def deserialize(avro_bytes, decode_schema=False):
     else:
         raise ValueError("avro_bytes must be a bytes object or file-like io object")
 
-    with DataFileReader(buffer, DatumReader()) as reader:
-        metadata = reader.meta
-        records = [r for r in reader]
+    reader = DataFileReader(buffer, DatumReader())
+    values = _avro_generator(reader)
+    metadata = reader.meta
 
     if decode_schema:
         metadata['avro.schema'] = json.loads(metadata['avro.schema'].decode('utf-8'))
 
-    return metadata, records
+    return metadata, values
