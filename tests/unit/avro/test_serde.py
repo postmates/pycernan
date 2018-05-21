@@ -64,9 +64,9 @@ def test_serialize_and_deserialize():
     }
 
     avro_blob = serialize(USER_SCHEMA, [user])
-    (test_meta, test_records) = deserialize(avro_blob, decode_schema=True)
+    (test_meta, test_generator) = deserialize(avro_blob, decode_schema=True)
     assert isinstance(test_meta, dict)
-    assert isinstance(test_records, list)
+    assert isinstance(test_generator, types.GeneratorType)
     assert isinstance(test_meta['avro.schema'], dict)
 
     test_schema = test_meta['avro.schema']
@@ -74,19 +74,22 @@ def test_serialize_and_deserialize():
     assert test_schema['namespace'] == USER_SCHEMA['namespace']
     assert test_schema['fields'] == USER_SCHEMA['fields']
 
+    test_records = [value for value in test_generator]
     assert len(test_records) == 1
     assert test_records[0] == user
 
     test_buffer = BytesIO(avro_blob)
-    test_meta, test_records2 = deserialize(test_buffer)
+    test_meta, test_generator = deserialize(test_buffer)
     assert isinstance(test_meta['avro.schema'], bytes)
-    assert isinstance(test_records2, list)
-    assert len(test_records2) == 1
-    assert test_records2[0] == user
+    assert isinstance(test_generator, types.GeneratorType)
+
+    test_records = [value for value in test_generator]
+    assert len(test_records) == 1
+    assert test_records[0] == user
 
     # Ensure deserialize skips decoding values when instructed.
     test_buffer = BytesIO(avro_blob)
-    test_meta, test_generator = deserialize(test_buffer, decode_values=False)
+    test_meta, test_generator = deserialize(test_buffer)
     assert isinstance(test_generator, types.GeneratorType)
     assert [value for value in test_generator] == [user]
 
