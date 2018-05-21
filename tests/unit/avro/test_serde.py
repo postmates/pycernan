@@ -87,12 +87,6 @@ def test_serialize_and_deserialize():
     assert len(test_records) == 1
     assert test_records[0] == user
 
-    # Ensure deserialize skips decoding values when instructed.
-    test_buffer = BytesIO(avro_blob)
-    test_meta, test_generator = deserialize(test_buffer)
-    assert isinstance(test_generator, types.GeneratorType)
-    assert [value for value in test_generator] == [user]
-
 
 def test_serialize_with_metadata():
     metadata = {
