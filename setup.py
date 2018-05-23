@@ -1,4 +1,11 @@
+import sys
+
 from setuptools import setup, find_packages
+
+if sys.version_info >= (3, 0):
+    install_requires = ['avro-python3>=1.8.2']
+else:
+    install_requires = ['avro>=1.8.2']
 
 setup(
     name="pycernan",
@@ -16,16 +23,7 @@ setup(
         'pytest-timeout',
         'mock>=1.0.1',
     ],
-    install_requires=[
-    ],
-    extras_require={
-        ":python_version<'3.0'": ["avro==1.8.2+postmates.1"],
-        ":python_version>='3.0'": ["avro-python3==1.8.2+postmates.1"],
-    },
-    dependency_links=[
-        "git+https://github.com/postmates/avro.git@1.8.2+postmates.1#subdirectory=lang/py&egg=avro-1.8.2+postmates.1",
-        "git+https://github.com/postmates/avro.git@1.8.2+postmates.1#subdirectory=lang/py3&egg=avro-python3-1.8.2+postmates.1",
-    ],
+    install_requires=install_requires,
     include_package_data=True,
     scripts=[],
     classifiers=[

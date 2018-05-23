@@ -1,2 +1,6 @@
 --index-url https://pypi.python.org/simple/
+
+git+https://github.com/postmates/avro.git@1.8.2+postmates.1#subdirectory=lang/py ; python_version < '3.0'
+git+https://github.com/postmates/avro.git@1.8.2+postmates.1#subdirectory=lang/py3 ; python_version >= '3.0'
+
 -e .
