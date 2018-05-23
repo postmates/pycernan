@@ -2,6 +2,8 @@ import sys
 
 from setuptools import setup, find_packages
 
+from pycernan import __version__
+
 if sys.version_info >= (3, 0):
     install_requires = ['avro-python3>=1.8.2']
 else:
@@ -9,7 +11,7 @@ else:
 
 setup(
     name="pycernan",
-    version="0.0.9",
+    version=__version__,
     author="John Koenig",
     author_email="john@postmates.com",
     description="Python client for Cernan.",
