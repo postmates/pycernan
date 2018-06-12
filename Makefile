@@ -13,7 +13,7 @@ sdist:
 
 .PHONY: install
 install: all
-	pip install -r ./requirements.txt --process-dependency-links
+	pip install -r ./requirements.txt
 
 .PHONY: clean-all
 clean-all: clean
