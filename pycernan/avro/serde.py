@@ -56,7 +56,7 @@ def serialize(schema_map, batch, ephemeral_storage=False, **metadata):
     return encoded
 
 
-def deserialize(avro_bytes, decode_schema=False):
+def deserialize(avro_bytes, decode_schema=False, reader_schema=None):
     """
         Deserialize encoded avro bytes.
 
@@ -64,12 +64,14 @@ def deserialize(avro_bytes, decode_schema=False):
             avro_bytes: IOBase | bytes - Avro blob to decode.
 
         Kwargs:
-            decode_schema: Bool - Load metadata['avro.schema'] as JSON?.  Default = False.
+            decode_schema: Bool - Load metadata['avro.schema'] as Python dictionary?.  Default = False.
+
+            reader_schema: Dict - Schema to use when deserializing. If None, use writer_schema.  Default = None.
 
         Returns:
             (metadata, values) where:
                 metadata: dict - Avro metadata as raw bytes.  When decode_schema is True,
-                    the key 'avro.schema' value will be loaded as JSON.
+                    the key 'avro.schema' value will be loaded as a Python dictionary instead of a string of JSON.
 
                 values: generator - Generator for values corresponding to the schema contained
                     in metadata.
@@ -87,7 +89,17 @@ def deserialize(avro_bytes, decode_schema=False):
     else:
         raise ValueError("avro_bytes must be a bytes object or file-like io object")
 
-    reader = DataFileReader(buffer, DatumReader())
+    if reader_schema:
+        parsed_reader_schema = parse(json.dumps(reader_schema))
+    else:
+        parsed_reader_schema = None
+
+    # NOTE: "reader_schema" in py3, "readers_schema" in py2! :facepalm:
+    if sys.version_info >= (3, 0):
+        reader = DataFileReader(buffer, DatumReader(reader_schema=parsed_reader_schema))
+    else:
+        reader = DataFileReader(buffer, DatumReader(readers_schema=parsed_reader_schema))
+
     values = _avro_generator(reader)
     metadata = reader.meta
 
