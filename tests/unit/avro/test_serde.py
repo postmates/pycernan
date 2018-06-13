@@ -2,7 +2,7 @@ import json
 import pytest
 import types
 
-from avro.io import DatumReader
+from avro.io import DatumReader, SchemaResolutionException
 from avro.datafile import DataFileReader
 from io import BytesIO
 
@@ -18,6 +18,37 @@ USER_SCHEMA = {
         {"name": "name", "type": "string"},
         {"name": "favorite_number",  "type": ["int", "null"]},
         {"name": "favorite_color", "type": ["string", "null"]}
+    ]
+}
+
+
+BOOK_SCHEMA_WRITE = {
+    "namespace": "example.avro",
+    "type": "record",
+    "name": "Book",
+    "fields": [
+        {"name": "title", "type": "string"},
+        {"name": "first_sentence", "type": "string"},
+    ]
+}
+
+BOOK_SCHEMA_READ_1 = {
+    "namespace": "example.avro",
+    "type": "record",
+    "name": "Book",
+    "fields": [
+        {"name": "title", "type": "string"},
+        {"name": "first_sentence", "type": "string"},
+        {"name": "pages",  "type": ["null", "int"], "default": "null"}
+    ]
+}
+
+BOOK_SCHEMA_READ_2 = {
+    "namespace": "example.avro",
+    "type": "record",
+    "name": "Book",
+    "fields": [
+        {"name": "first_sentence", "type": "string"}
     ]
 }
 
@@ -86,6 +117,43 @@ def test_serialize_and_deserialize():
     test_records = [value for value in test_generator]
     assert len(test_records) == 1
     assert test_records[0] == user
+
+
+def test_serialize_and_deserialize_with_reader_schema():
+    book = {
+        'title': 'Nineteen Eighty-Four',
+        'first_sentence': 'It was a bright cold day in April, and the clocks were striking thirteen.'
+    }
+
+    book_read_1 = {
+        'title': 'Nineteen Eighty-Four',
+        'first_sentence': 'It was a bright cold day in April, and the clocks were striking thirteen.',
+        'pages': None
+    }
+
+    book_read_2 = {
+        'first_sentence': 'It was a bright cold day in April, and the clocks were striking thirteen.'
+    }
+
+    avro_blob = serialize(BOOK_SCHEMA_WRITE, [book])
+
+    (test_meta, test_generator) = deserialize(avro_blob, decode_schema=True, reader_schema=BOOK_SCHEMA_READ_1)
+    assert isinstance(test_generator, types.GeneratorType)
+    test_records = [value for value in test_generator]
+    assert len(test_records) == 1
+    assert test_records[0] == book_read_1
+
+    (test_meta, test_generator) = deserialize(avro_blob, decode_schema=True, reader_schema=BOOK_SCHEMA_READ_2)
+    assert isinstance(test_generator, types.GeneratorType)
+    test_records = [value for value in test_generator]
+    assert len(test_records) == 1
+    assert test_records[0] == book_read_2
+
+    # test read with incompatible schema
+    (test_meta, test_generator) = deserialize(avro_blob, decode_schema=True, reader_schema=USER_SCHEMA)
+    assert isinstance(test_generator, types.GeneratorType)
+    with pytest.raises(SchemaResolutionException):
+        test_records = [value for value in test_generator]
 
 
 def test_serialize_with_metadata():
