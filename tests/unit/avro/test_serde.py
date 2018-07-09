@@ -78,11 +78,19 @@ def test_serialize_and_deserialize():
     assert len(test_records) == 1
     assert test_records[0] == user
 
+    # Ensure serialization / deserialization via generators
+    # works as expected.
     test_buffer = BytesIO(avro_blob)
     test_meta, test_generator = deserialize(test_buffer)
     assert isinstance(test_meta['avro.schema'], bytes)
     assert isinstance(test_generator, types.GeneratorType)
 
+    # Reform the generator by re-encoding the original, passed
+    # as part of a batch.
+    test_generator_blob = serialize(USER_SCHEMA, [test_generator])
+    _, test_generator = deserialize(test_generator_blob)
+
+    # Ensure the expected data survived.
     test_records = [value for value in test_generator]
     assert len(test_records) == 1
     assert test_records[0] == user
