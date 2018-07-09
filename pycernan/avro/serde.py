@@ -1,5 +1,6 @@
 import json
 import sys
+import types
 
 from avro.io import DatumWriter, DatumReader
 from avro.datafile import DataFileWriter, DataFileReader
@@ -22,7 +23,7 @@ def serialize(schema_map, batch, ephemeral_storage=False, **metadata):
 
         Args:
             schema_map: dict or pycernan.avro.serde.parse - Avro schema defintion.
-            batch: list - List of Avro types.
+            batch: list - List of concrete avro types or avro type generators.
 
         Kwargs:
             ephemeral_storage: bool - Flag to indicate whether the batch
@@ -47,8 +48,12 @@ def serialize(schema_map, batch, ephemeral_storage=False, **metadata):
             set_meta = getattr(writer, 'set_meta', None) or writer.SetMeta
             set_meta(k, str(v))
 
-        for record in batch:
-            writer.append(record)
+        for record_or_generator in batch:
+            if isinstance(record_or_generator, types.GeneratorType):
+                for record in record_or_generator:
+                    writer.append(record)
+            else:
+                writer.append(record_or_generator)
 
         writer.flush()
         encoded = avro_buf.getvalue()
