@@ -7,7 +7,7 @@ from pycernan import __version__
 if sys.version_info >= (3, 0):
     install_requires = ['avro-python3>=1.8.2']
 else:
-    install_requires = ['avro>=1.8.2']
+    install_requires = ['future', 'avro>=1.8.2']
 
 setup(
     name="pycernan",

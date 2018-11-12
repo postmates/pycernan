@@ -62,24 +62,25 @@ class Client(client.Client):
         self._send(id, sync, payload)
 
     def _send(self, id, sync, payload):
-        self._send_exact(payload)
-        if sync:
-            self._wait_for_ack(id)
+        with self.pool.connection() as sock:
+            self._send_exact(sock, payload)
+            if sync:
+                self._wait_for_ack(sock, id)
 
-    def _wait_for_ack(self, id):
-        id_bytes = self._recv_exact(8)
+    def _wait_for_ack(self, sock, id):
+        id_bytes = self._recv_exact(sock, 8)
         (recv_id,) = struct.unpack(">Q", id_bytes)
 
         if recv_id != id:
             raise InvalidAckException()
 
-    def _send_exact(self, payload):
-        self.sock.sendall(payload)
+    def _send_exact(self, sock, payload):
+        sock.sendall(payload)
 
-    def _recv_exact(self, n_bytes):
+    def _recv_exact(self, sock, n_bytes):
         buf = bytearray(b'')
         while len(buf) < n_bytes:
-            recvd = self.sock.recv(n_bytes - len(buf))
+            recvd = sock.recv(n_bytes - len(buf))
             if len(recvd) == 0:
                 raise ConnectionResetException()
 
