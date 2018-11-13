@@ -109,7 +109,7 @@ class Client(object):
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, host=None, port=None, maxsize=10, connect_timeout=50, publish_timeout=10):
+    def __init__(self, host=None, port=None, connect_timeout=50, publish_timeout=10, maxsize=10):
         host = host or pycernan.avro.config.host()
         port = port or pycernan.avro.config.port()
 
@@ -119,9 +119,9 @@ class Client(object):
         self.pool = TCPConnectionPool(
             host,
             port,
-            maxsize,
-            connect_timeout,
-            publish_timeout)
+            maxsize=maxsize,
+            connect_timeout=connect_timeout,
+            read_timeout=publish_timeout)
 
     def close(self):
         """
