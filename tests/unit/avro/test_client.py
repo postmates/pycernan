@@ -23,19 +23,24 @@ USER_SCHEMA = {
 
 
 class FakeSocket(object):
-    def __init__(self, num_failures=0):
-        self.num_failures = num_failures
+    def __init__(self, set_failures=0, close_failures=0):
+        self.set_failures = set_failures
+        self.close_failures = close_failures
         self.call_args_list = []
 
     def settimeout(self, *args, **kwargs):
-        if self.num_failures > 0:
-            self.num_failures -= 1
-            raise Exception("Oops")
-
         self.call_args_list.append(('settimeout', mock.call(*args, **kwargs)))
+
+        if self.set_failures > 0:
+            self.set_failures -= 1
+            raise Exception("Oops")
 
     def close(self):
         self.call_args_list.append(('close', mock.call()))
+
+        if self.close_failures > 0:
+            self.close_failures -= 1
+            raise Exception("Oops")
 
     def _reset_mock(self):
         self.call_args_list = []
@@ -46,6 +51,10 @@ class ForcedException(Exception):
 
 
 class TestTCPConnectionPool():
+
+    def test_pool_value_errors(self):
+        with pytest.raises(ValueError):
+            TCPConnectionPool('foobar', 80, -1, 1, 1)
 
     @mock.patch.object(TCPConnectionPool, 'create_connection', return_value=None, autospec=True)
     def test_pool_creation_is_lazy_relative_to_first_use(self, connection_mock):
@@ -119,7 +128,7 @@ class TestTCPConnectionPool():
     def test_regenerating_connections_tolerates_exceptions(self, connect_mock):
         num_failures = 20
         pool = TCPConnectionPool('foobar', 80, 10, 1, 1)
-        mock_sock = FakeSocket(num_failures=num_failures)
+        mock_sock = FakeSocket(set_failures=num_failures)
         connect_mock.return_value = mock_sock
 
         # Simulate a prior failure
@@ -145,6 +154,17 @@ class TestTCPConnectionPool():
             pass
         assert pool.pool.qsize() == 1
         assert pool.pool.get_nowait() is mock_sock
+
+    @mock.patch('pycernan.avro.client.socket.create_connection', autospec=True)
+    def test_closing_tolerates_close_exceptions(self, create_mock):
+        expected_sock = FakeSocket(close_failures=10)
+        create_mock.return_value = expected_sock
+        pool = TCPConnectionPool('foobar', 80, 10, 1, 1)
+        with pool.connection():
+            pass
+
+        pool.closeall()
+        assert expected_sock.call_args_list[-1] == ('close', mock.call())
 
 
 @pytest.mark.parametrize("avro_file", settings.test_data)
@@ -230,10 +250,11 @@ def test_closing_the_client_closes_the_socket_and_clears_it(m_connect):
 
     with client.pool.connection():
         pass  # Generates a connection
-
     assert client.pool is not None
     assert client.pool.pool.qsize() == 1
 
+    # Close calls should gracefully handle defunct connections too
+    client.pool.put(DefunctConnection)
     expected_sock._reset_mock()
     client.close()
 
@@ -252,4 +273,5 @@ def test_closing_the_client_with_no_socket_does_not_crash(m_connect):
         port=31337,
         connect_timeout=666,
         publish_timeout=999)
+
     client.close()

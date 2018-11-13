@@ -15,3 +15,7 @@ class InvalidAckException(Exception):
 
 class ConnectionResetException(Exception):
     pass
+
+
+class EmptyPoolException(Exception):
+    pass

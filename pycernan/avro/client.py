@@ -9,15 +9,11 @@ import pycernan.avro.config
 from abc import ABCMeta, abstractmethod
 from queue import Queue, Empty
 
-from pycernan.avro.exceptions import EmptyBatchException
+from pycernan.avro.exceptions import EmptyBatchException, EmptyPoolException
 from pycernan.avro.serde import serialize
 
 
 DefunctConnection = None
-
-
-class EmptyPoolException(Exception):
-    pass
 
 
 class TCPConnectionPool(object):
@@ -27,10 +23,11 @@ class TCPConnectionPool(object):
     Adapted from: https://github.com/gevent/gevent/blob/master/examples/psycopg2_pool.py
     """
     def __init__(self, host, port, maxsize, connect_timeout, read_timeout):
+        if maxsize <= 0:
+            raise ValueError("maxsize must be > 0")
+
         self.host = host
         self.port = port
-
-        assert maxsize > 0
         self.size = 0
         self.maxsize = maxsize
 
@@ -130,8 +127,7 @@ class Client(object):
         """
             Closes all previously established connections not actively in use.
         """
-        if self.pool:
-            self.pool.closeall()
+        self.pool.closeall()
 
     def publish(self, schema_map, batch, ephemeral_storage=False, **kwargs):
         """
