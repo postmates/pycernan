@@ -3,10 +3,10 @@ import pytest
 
 import settings
 
-from queue import Queue
+from queue import Queue, Empty
 
 from pycernan.avro import BaseDummyClient, DummyClient
-from pycernan.avro.client import TCPConnectionPool, DefunctConnection, EmptyPoolException
+from pycernan.avro.client import TCPConnectionPool, _DefunctConnection, EmptyPoolException
 from pycernan.avro.exceptions import SchemaParseException, DatumTypeException, EmptyBatchException
 
 
@@ -56,13 +56,17 @@ class TestTCPConnectionPool():
         with pytest.raises(ValueError):
             TCPConnectionPool('foobar', 80, -1, 1, 1)
 
-    @mock.patch.object(TCPConnectionPool, 'create_connection', return_value=None, autospec=True)
-    def test_pool_creation_is_lazy_relative_to_first_use(self, connection_mock):
-        pool = TCPConnectionPool('foobar', 80, 10, 3, 1)
-        assert pool.pool is None
+    @mock.patch.object(TCPConnectionPool, '_create_connection', return_value=None, autospec=True)
+    def test_pool_creation(self, connection_mock):
+        size = 10
+        pool = TCPConnectionPool('foobar', 80, size, 3, 1)
+        assert pool.pool is not None
+        for _ in range(size):
+            assert pool.pool.get_nowait() == _DefunctConnection
 
-        with pool.connection():
-            assert pool.pool is not None
+        # Pool should be drained now.
+        with pytest.raises(Empty):
+            pool.pool.get_nowait()
 
     @mock.patch('pycernan.avro.client.socket.create_connection', autospec=True)
     def test_connection(self, connect_mock):
@@ -89,7 +93,7 @@ class TestTCPConnectionPool():
                 with pool.connection(_block=False):
                     assert False  # Should not be reached
 
-    @mock.patch.object(TCPConnectionPool, 'create_connection', side_effect=ForcedException("Oops"), autospec=True)
+    @mock.patch.object(TCPConnectionPool, '_create_connection', side_effect=ForcedException("Oops"), autospec=True)
     def test_create_connection_reraises(self, create_connection_mock):
         pool = TCPConnectionPool('foobar', 80, 10, 1, 1)
         with pytest.raises(ForcedException):
@@ -102,7 +106,8 @@ class TestTCPConnectionPool():
 
     @mock.patch('pycernan.avro.client.socket.create_connection', autospec=True)
     def test_exceptions_result_in_defunct_connections(self, connect_mock):
-        pool = TCPConnectionPool('foobar', 80, 10, 1, 1)
+        size = 10
+        pool = TCPConnectionPool('foobar', 80, size, 1, 1)
         mock_sock = FakeSocket()
         connect_mock.return_value = mock_sock
 
@@ -110,8 +115,8 @@ class TestTCPConnectionPool():
             with pool.connection():
                 raise ForcedException()
 
-        assert pool.pool.qsize() == 1
-        assert pool.pool.get_nowait() == DefunctConnection
+        assert pool.pool.qsize() == size
+        assert pool.pool.get_nowait() == _DefunctConnection
 
     @mock.patch('pycernan.avro.client.socket.create_connection', autospec=True)
     def test_defunct_connections_are_regenerated(self, connect_mock):
@@ -120,7 +125,7 @@ class TestTCPConnectionPool():
         connect_mock.return_value = mock_sock
 
         pool.pool = Queue()
-        pool.pool.put(DefunctConnection)
+        pool.pool.put(_DefunctConnection)
         with pool.connection() as conn:
             assert conn is mock_sock
 
@@ -134,7 +139,7 @@ class TestTCPConnectionPool():
         # Simulate a prior failure
         pool.pool = Queue()
         pool.size = 1
-        pool.pool.put(DefunctConnection)
+        pool.pool._put(_DefunctConnection)
 
         # Try a number of failed operations.
         # Each time the defunct connection should be returned to the queue
@@ -145,8 +150,8 @@ class TestTCPConnectionPool():
                     assert False  # Should not be reached
 
             assert pool.pool.qsize() == pool.size == 1
-            assert pool.pool.get_nowait() is DefunctConnection
-            pool.pool.put(DefunctConnection)
+            assert pool.pool.get_nowait() is _DefunctConnection
+            pool.pool._put(_DefunctConnection)
 
         # Failures are exhausted, we should be able to now
         # regenerate a valid context.
@@ -251,10 +256,10 @@ def test_closing_the_client_closes_the_socket_and_clears_it(m_connect):
     with client.pool.connection():
         pass  # Generates a connection
     assert client.pool is not None
-    assert client.pool.pool.qsize() == 1
+    assert client.pool.pool.qsize()
 
     # Close calls should gracefully handle defunct connections too
-    client.pool.put(DefunctConnection)
+    client.pool._put(_DefunctConnection)
     expected_sock._reset_mock()
     client.close()
 

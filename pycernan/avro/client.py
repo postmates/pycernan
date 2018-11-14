@@ -13,7 +13,7 @@ from pycernan.avro.exceptions import EmptyBatchException, EmptyPoolException
 from pycernan.avro.serde import serialize
 
 
-DefunctConnection = None
+_DefunctConnection = object()
 
 
 class TCPConnectionPool(object):
@@ -33,74 +33,67 @@ class TCPConnectionPool(object):
 
         self.connect_timeout = connect_timeout
         self.read_timeout = read_timeout
-        self.pool = None
+        self.pool = Queue()
+        for _ in range(maxsize):
+            self._put(_DefunctConnection)
 
-    def create_connection(self):
+    def _create_connection(self):
         sock = socket.create_connection((self.host, self.port), timeout=self.connect_timeout)
         sock.settimeout(self.read_timeout)
         return sock
 
-    def get(self, _block=True):
-        if not self.pool:
-            # Lazy queue creation, ensuring we are fork() friendly.
-            # Caveat - Users must not use the connection pool prior to
-            # forking.
-            self.pool = Queue()
-
-        if self.size >= self.maxsize or self.pool.qsize():
-            try:
-                existing_item = self.pool.get(_block)
-            except Empty:
-                # Expected to happen only when users override _block=False
-                raise EmptyPoolException()
-
-            if not existing_item:
-                try:
-                    existing_item = self.create_connection()
-                except Exception:
-                    # Always return the resource to the queue,
-                    # event if it is defunct.
-                    self.put(DefunctConnection)
-                    raise
-
-            return existing_item
-
-        self.size += 1
+    def _get(self, _block=True):
         try:
-            new_item = self.create_connection()
-        except Exception:
-            self.size -= 1
-            raise
-        return new_item
+            connection = self.pool.get(_block)
+        except Empty:
+            # Expected to happen only when users override _block=False
+            raise EmptyPoolException()
 
-    def put(self, item):
+        # When a connection is defunct, we attempt to
+        # regenerate it.  Note - it is important that we always return
+        # something back to the queue here so that we don't errode the
+        # errode our capacity.
+        if connection is _DefunctConnection:
+            try:
+                connection = self._create_connection()
+            except:
+                # Always return a resource to the queue,
+                # even if it is defunct.
+                self._put(_DefunctConnection)
+                raise
+
+        return connection
+
+    def _put(self, item):
+        # Why this function?  It makes mocking in unit tests easier.
         self.pool.put(item)
 
     def closeall(self):
-        if not self.pool:
-            return
-
-        while not self.pool.empty():
-            conn = self.pool.get_nowait()
-
-            if not conn:
-                continue
-
-            try:
+        """
+            Close established connections currently not in-use.
+        """
+        try:
+            while True:
+                conn = self.pool.get_nowait()
+                if conn is _DefunctConnection:
+                    continue
                 conn.close()
-            except Exception:
-                pass
+        except Exception:
+            pass
 
     @contextlib.contextmanager
     def connection(self, _block=True):
-        conn = self.get(_block)
+        """
+            Context manager for pooled connections.
+        """
+        conn = self._get(_block)
         try:
             yield conn
-        except Exception:
-            conn = DefunctConnection
+        except:
+            conn = _DefunctConnection
             raise
         finally:
-            self.put(conn)
+            self._put(conn)
 
 
 class Client(object):
