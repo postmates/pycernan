@@ -50,8 +50,7 @@ class TCPConnectionPool(object):
 
         # When a connection is defunct, we attempt to
         # regenerate it.  Note - it is important that we always return
-        # something back to the queue here so that we don't errode the
-        # errode our capacity.
+        # something back to the queue here so that we don't errode our capacity.
         if connection is _DefunctConnection:
             try:
                 connection = self._create_connection()
@@ -85,13 +84,24 @@ class TCPConnectionPool(object):
         """
             Context manager for pooled connections.
         """
+        garbage = None
         conn = self._get(_block)
         try:
             yield conn
         except:
+            # Why do we defer closing conn here?
+            # Python2 has different `raise` semantics than Python3.
+            # Deferring garbage collection until the finally block
+            # saves us from having to account for these differences.
+            garbage = conn
             conn = _DefunctConnection
             raise
         finally:
+            if garbage:
+                try:
+                    garbage.close()
+                except:
+                    pass
             self._put(conn)
 
 

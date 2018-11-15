@@ -33,14 +33,14 @@ class FakeSocket(object):
 
         if self.set_failures > 0:
             self.set_failures -= 1
-            raise Exception("Oops")
+            raise Exception("settimeout Exception")
 
     def close(self):
         self.call_args_list.append(('close', mock.call()))
 
         if self.close_failures > 0:
             self.close_failures -= 1
-            raise Exception("Oops")
+            raise Exception("close Exception")
 
     def _reset_mock(self):
         self.call_args_list = []
@@ -92,6 +92,28 @@ class TestTCPConnectionPool():
             with pytest.raises(EmptyPoolException):
                 with pool.connection(_block=False):
                     assert False  # Should not be reached
+
+    @mock.patch('pycernan.avro.client.socket.create_connection', autospec=True)
+    def test_connection_on_exception_closes_connections(self, connect_mock):
+        pool = TCPConnectionPool('foobar', 8080, 1, 1, 1)
+
+        # Connections are closed when application layer Exceptions occur.
+        mock_sock = FakeSocket()
+        connect_mock.return_value = mock_sock
+        with pytest.raises(ForcedException):
+            with pool.connection() as sock:
+                raise ForcedException()
+        assert mock_sock.call_args_list[-1] == ('close', mock.call())
+
+        # Repeat the same experiment, this time simulating exception on close.
+        # The semantics should match, namely, the exception is tolerated and
+        # users get back the application level Exception.
+        mock_sock.close_failures = 10
+        mock_sock.call_args_list = []
+        with pytest.raises(ForcedException):
+            with pool.connection() as sock:
+                raise ForcedException()
+        assert mock_sock.call_args_list[-1] == ('close', mock.call())
 
     @mock.patch.object(TCPConnectionPool, '_create_connection', side_effect=ForcedException("Oops"), autospec=True)
     def test_create_connection_reraises(self, create_connection_mock):
