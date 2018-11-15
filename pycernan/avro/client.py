@@ -28,7 +28,6 @@ class TCPConnectionPool(object):
 
         self.host = host
         self.port = port
-        self.size = 0
         self.maxsize = maxsize
 
         self.connect_timeout = connect_timeout
