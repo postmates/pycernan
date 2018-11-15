@@ -21,6 +21,11 @@ class TCPConnectionPool(object):
     Fork friendly TCP connection pool.
 
     Adapted from: https://github.com/gevent/gevent/blob/master/examples/psycopg2_pool.py
+
+    All exceptions (application, operation (timeouts, etc)) are the responsibility of the user to
+    handle responsibly.  One day, with sufficient time and motivation, this class could be made
+    more intelligent to handle connection related exceptions distinct from application layer
+    concerns.
     """
     def __init__(self, host, port, maxsize, connect_timeout, read_timeout):
         if maxsize <= 0:
