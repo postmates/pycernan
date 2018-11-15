@@ -37,7 +37,7 @@ def test_params():
 
 
 @pytest.mark.parametrize("id, shard_by, avro_file", test_params())
-@mock.patch('pycernan.avro.v1.Client._connect', return_value=None, autospec=True)
+@mock.patch('pycernan.avro.client.TCPConnectionPool.connection', return_value=mock.MagicMock(), autospec=True)
 @mock.patch('pycernan.avro.v1.Client._wait_for_ack', return_value=None, autospec=True)
 @mock.patch('pycernan.avro.v1.Client._send_exact', return_value=None, autospec=True)
 def test_publish_blob(send_mock, ack_mock, connect_mock, id, shard_by, avro_file):
@@ -54,7 +54,7 @@ def test_publish_blob(send_mock, ack_mock, connect_mock, id, shard_by, avro_file
     send_calls = send_mock.mock_calls
     assert(len(send_calls) == 1)
     send_call = send_calls[0]
-    (_self, payload_raw) = send_call[1]
+    (_self, _sock, payload_raw) = send_call[1]
 
     payload = struct.unpack(
         unpack_fmt(len(file_contents)),
@@ -79,28 +79,32 @@ def test_publish_blob(send_mock, ack_mock, connect_mock, id, shard_by, avro_file
 
 @mock.patch('pycernan.avro.v1.Client._recv_exact', autospec=True)
 def test_wait_for_ack_raises_InvalidAckException_for_wrong_id_success_otherwise(m_recv, dummy_client):
+    mock_sock = mock.MagicMock()
     expected_id = random.randrange(2**64)
     m_recv.return_value = struct.pack('>Q', expected_id)
 
     with pytest.raises(InvalidAckException):
-        dummy_client._wait_for_ack(expected_id+1)
+        dummy_client._wait_for_ack(mock_sock, expected_id+1)
 
-    dummy_client._wait_for_ack(expected_id)
+    dummy_client._wait_for_ack(mock_sock, expected_id)
 
 
 def test_send_exact_just_calls_sendall(dummy_client):
-    dummy_client._send_exact(b'some buffer')
-    assert dummy_client.sock.sendall.call_args_list == [mock.call(b'some buffer')]
+    mock_sock = mock.MagicMock()
+    dummy_client._send_exact(mock_sock, b'some buffer')
+    assert mock_sock.sendall.call_args_list == [mock.call(b'some buffer')]
 
 
 def test_recv_exact_can_exit_after_one_iteration(dummy_client):
+    mock_sock = mock.MagicMock()
     expected_data = b'all the data'
-    dummy_client.sock.recv.return_value = expected_data
-    dummy_client._recv_exact(len(expected_data)) == expected_data
+    mock_sock.recv.return_value = expected_data
+    dummy_client._recv_exact(mock_sock, len(expected_data)) == expected_data
 
 
 def test_recv_exact_will_loop_if_necessary(dummy_client):
     import sys
+    mock_sock = mock.MagicMock()
     expected_data = b'all the data'
 
     if sys.version_info >= (3, 0):
@@ -110,14 +114,15 @@ def test_recv_exact_will_loop_if_necessary(dummy_client):
         def make_side_effect():
             return [bytearray(b) for b in expected_data]
 
-    dummy_client.sock.recv.side_effect = make_side_effect()
-    assert dummy_client._recv_exact(len(expected_data)) == expected_data
+    mock_sock.recv.side_effect = make_side_effect()
+    assert dummy_client._recv_exact(mock_sock, len(expected_data)) == expected_data
 
     expected_recv_calls = [mock.call(x) for x in reversed(range(1, len(expected_data)+1))]
-    assert dummy_client.sock.recv.call_args_list == expected_recv_calls
+    assert mock_sock.recv.call_args_list == expected_recv_calls
 
 
 def test_recv_exact_with_zero_length_will_raise_ConnectionResetException(dummy_client):
-    dummy_client.sock.recv.side_effect = [bytearray(0)]
+    mock_sock = mock.MagicMock()
+    mock_sock.recv.side_effect = [bytearray(0)]
     with pytest.raises(ConnectionResetException):
-        dummy_client._recv_exact(5)
+        dummy_client._recv_exact(mock_sock, 5)
