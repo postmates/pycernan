@@ -1,13 +1,8 @@
-import sys
-
 from setuptools import setup, find_packages
 
 from pycernan import __version__
 
-if sys.version_info >= (3, 0):
-    install_requires = ['avro-python3>=1.8.2']
-else:
-    install_requires = ['future', 'avro>=1.8.2']
+install_requires = ['fastavro', 'future']
 
 setup(
     name="pycernan",
