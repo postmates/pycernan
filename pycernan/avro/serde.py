@@ -26,11 +26,7 @@ def serialize(schema_map, batch, ephemeral_storage=False, **metadata):
         Returns:
             bytes
     """
-    if isinstance(schema_map, dict):
-        parsed_schema = parse_schema(schema_map)
-    else:
-        parsed_schema = schema_map
-
+    parsed_schema = parse_schema(schema_map)
     avro_buf = BytesIO()
 
     if ephemeral_storage:
