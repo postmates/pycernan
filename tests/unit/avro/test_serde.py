@@ -138,6 +138,45 @@ def test_serialize_and_deserialize():
     assert test_records[0] == user
 
 
+TEST_SCHEMA_LOGICAL_TYPES = {
+    "type": "record",
+    "namespace": "com.postmates.test",
+    "name": "test_event_logical_types",
+    "fields": [
+        {
+            "name": "ts",
+            "type": ["null", {"type": "long", "logicalType": "timestamp-micros"}],
+            "default": None,
+            "doc": "some timestamp",
+        },
+        {
+            "name": "customer_uuid",
+            "type": ["null", "string"],
+            "default": None,
+            "doc": "customer uuid",
+        },
+    ]
+}
+
+
+def test_logical_types():
+    from datetime import datetime
+    from pytz import timezone
+
+    event = {
+        'ts': datetime.utcnow().replace(tzinfo=timezone('UTC')),
+        'customer_uuid': 'some_random_uuid'
+    }
+
+    avro_blob = serialize(TEST_SCHEMA_LOGICAL_TYPES, [event])
+
+    (test_meta, test_generator) = deserialize(avro_blob, decode_schema=True)
+    assert isinstance(test_generator, types.GeneratorType)
+    test_records = [value for value in test_generator]
+    assert len(test_records) == 1
+    assert test_records[0] == event
+
+
 def test_serialize_and_deserialize_with_reader_schema():
     book = {
         'title': 'Nineteen Eighty-Four',

@@ -19,6 +19,7 @@ setup(
         'pytest-cov',
         'pytest-timeout',
         'mock>=1.0.1',
+        'pytz',
     ],
     install_requires=install_requires,
     include_package_data=True,
