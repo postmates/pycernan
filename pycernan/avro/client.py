@@ -12,7 +12,6 @@ from queue import Queue, Empty
 from pycernan.avro.exceptions import EmptyBatchException, EmptyPoolException
 from pycernan.avro.serde import serialize
 
-
 _DefunctConnection = object()
 
 
@@ -27,6 +26,7 @@ class TCPConnectionPool(object):
     more intelligent to handle connection related exceptions distinct from application layer
     concerns.
     """
+
     def __init__(self, host, port, maxsize, connect_timeout, read_timeout):
         if maxsize <= 0:
             raise ValueError("maxsize must be > 0")
