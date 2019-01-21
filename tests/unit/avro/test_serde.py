@@ -1,3 +1,4 @@
+from decimal import Decimal
 import pytest
 import types
 
@@ -155,6 +156,18 @@ TEST_SCHEMA_LOGICAL_TYPES = {
             "default": None,
             "doc": "customer uuid",
         },
+        {
+            "name": "decimal_bytes",
+            "type": ["null", {"type": "bytes", "logicalType": "decimal", "precision": 15, "scale": 3}],
+            "default": None,
+            "doc": "some decimal",
+        },
+        {
+            "name": "decimal_fixed",
+            "type": ["null", {"name": "n", "type": "fixed", "size": 8, "logicalType": "decimal", "precision": 15, "scale": 3}],
+            "default": None,
+            "doc": "some decimal",
+        },
     ]
 }
 
@@ -165,7 +178,9 @@ def test_logical_types():
 
     event = {
         'ts': datetime.utcnow().replace(tzinfo=timezone('UTC')),
-        'customer_uuid': 'some_random_uuid'
+        'customer_uuid': 'some_random_uuid',
+        'decimal_bytes': Decimal("-2.90"),
+        'decimal_fixed': Decimal("3.68"),
     }
 
     avro_blob = serialize(TEST_SCHEMA_LOGICAL_TYPES, [event])
