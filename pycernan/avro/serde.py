@@ -2,15 +2,8 @@ import json
 import sys
 import types
 
-from avro.io import DatumWriter, DatumReader
-from avro.datafile import DataFileWriter, DataFileReader
+from fastavro import reader, writer, parse_schema
 from io import BytesIO, IOBase
-
-
-if sys.version_info >= (3, 0):
-    from avro.schema import Parse as parse      # pragma: no cover
-else:
-    from avro.schema import parse               # pragma: no cover
 
 
 def serialize(schema_map, batch, ephemeral_storage=False, **metadata):
@@ -33,32 +26,24 @@ def serialize(schema_map, batch, ephemeral_storage=False, **metadata):
         Returns:
             bytes
     """
-    if isinstance(schema_map, dict):
-        parsed_schema = parse(json.dumps(schema_map))
-    else:
-        parsed_schema = schema_map
-
+    parsed_schema = parse_schema(schema_map)
     avro_buf = BytesIO()
-    with DataFileWriter(avro_buf, DatumWriter(), parsed_schema, 'deflate') as writer:
-        if ephemeral_storage:
-            metadata['postmates.storage.ephemeral'] = '1'
 
-        for k, v in metadata.items():
-            # handle py2/py3 interface discrepancy
-            set_meta = getattr(writer, 'set_meta', None) or writer.SetMeta
-            set_meta(k, str(v))
+    if ephemeral_storage:
+        metadata['postmates.storage.ephemeral'] = '1'
 
-        for record_or_generator in batch:
-            if isinstance(record_or_generator, types.GeneratorType):
-                for record in record_or_generator:
-                    writer.append(record)
-            else:
-                writer.append(record_or_generator)
+    for k, v in metadata.items():
+        if not isinstance(v, str):
+            metadata[k] = str(v)
 
-        writer.flush()
-        encoded = avro_buf.getvalue()
+    for record_or_generator in batch:
+        write_data = [record_or_generator]
+        if isinstance(record_or_generator, types.GeneratorType):
+            # Fast avro doesn't handle iterators within iterators gracefully..
+            write_data = record_or_generator
+        writer(avro_buf, parsed_schema, write_data, codec='deflate', metadata=metadata)
 
-    return encoded
+    return avro_buf.getvalue()
 
 
 def deserialize(avro_bytes, decode_schema=False, reader_schema=None):
@@ -83,9 +68,8 @@ def deserialize(avro_bytes, decode_schema=False, reader_schema=None):
 
     """
     def _avro_generator(datafile_reader):
-        with datafile_reader:
-            for value in datafile_reader:
-                yield value
+        for value in datafile_reader:
+            yield value
 
     if isinstance(avro_bytes, IOBase):
         buffer = avro_bytes
@@ -94,21 +78,14 @@ def deserialize(avro_bytes, decode_schema=False, reader_schema=None):
     else:
         raise ValueError("avro_bytes must be a bytes object or file-like io object")
 
-    if reader_schema:
-        parsed_reader_schema = parse(json.dumps(reader_schema))
-    else:
-        parsed_reader_schema = None
-
-    # NOTE: "reader_schema" in py3, "readers_schema" in py2! :facepalm:
-    if sys.version_info >= (3, 0):
-        reader = DataFileReader(buffer, DatumReader(reader_schema=parsed_reader_schema))
-    else:
-        reader = DataFileReader(buffer, DatumReader(readers_schema=parsed_reader_schema))
-
-    values = _avro_generator(reader)
-    metadata = reader.meta
+    read = reader(buffer, reader_schema=reader_schema)
+    values = _avro_generator(read)
+    metadata = read.metadata
 
     if decode_schema:
-        metadata['avro.schema'] = json.loads(metadata['avro.schema'].decode('utf-8'))
+        schema = metadata['avro.schema']
+        if sys.version_info < (3, 0):
+            schema = schema.decode('utf-8')
+        metadata['avro.schema'] = json.loads(schema)
 
     return metadata, values

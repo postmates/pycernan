@@ -1,8 +1,9 @@
-import avro.io
-import avro.schema
+import fastavro
 
-SchemaParseException = avro.schema.SchemaParseException
-DatumTypeException = avro.io.AvroTypeException
+SchemaParseException = (fastavro.schema.SchemaParseException, KeyError)
+SchemaResolutionException = fastavro.read.SchemaResolutionError
+UnknownTypeException = fastavro.schema.UnknownType
+DatumTypeException = ValueError
 
 
 class EmptyBatchException(Exception):

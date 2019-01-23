@@ -2,5 +2,6 @@ pytest
 pytest-cov
 pytest-timeout
 mock
+pytz
 
 -r requirements.txt
