@@ -1,29 +1,18 @@
 """
     V1 Client for Cernan's Avro source.
 """
-import random
 import struct
 
-from pycernan.avro import client
-from pycernan.avro.exceptions import InvalidAckException, ConnectionResetException
+from pycernan.avro.base_client import BaseClient, _hash_u64, _rand_u64
 
-
-def _hash_u64(value):
-    return hash(value) % 2**64
-
-
-def _rand_u64():
-    return random.randrange(2**64)
-
-
-class Client(client.Client):
+class Client(BaseClient):
     """
        V1 of the Avro source protocol.
     """
 
     VERSION = 1
 
-    def publish_blob(self, avro_blob, sync=True, id=None, shard_by=None):
+    def publish_blob(self, avro_blob, sync=True, payload_id=None, shard_by=None):
         """
             Publishes an length prefixed avro payload to a V1 Avro source.
 
@@ -53,37 +42,10 @@ class Client(client.Client):
         """
         version = self.VERSION
         sync = 1 if sync else 0
-        id = int(id) if id else _rand_u64()
+        payload_id = int(payload_id) if payload_id else _rand_u64()
         shard_by = _hash_u64(shard_by) if shard_by else _rand_u64()
-        header = struct.pack(">LLQQ", version, sync, id, shard_by)
+        header = struct.pack(">LLQQ", version, sync, payload_id, shard_by)
         payload_len = len(header) + len(avro_blob)
         payload = struct.pack(">L", payload_len) + header + avro_blob
 
-        self._send(id, sync, payload)
-
-    def _send(self, id, sync, payload):
-        with self.pool.connection() as sock:
-            self._send_exact(sock, payload)
-            if sync:
-                self._wait_for_ack(sock, id)
-
-    def _wait_for_ack(self, sock, id):
-        id_bytes = self._recv_exact(sock, 8)
-        (recv_id,) = struct.unpack(">Q", id_bytes)
-
-        if recv_id != id:
-            raise InvalidAckException()
-
-    def _send_exact(self, sock, payload):
-        sock.sendall(payload)
-
-    def _recv_exact(self, sock, n_bytes):
-        buf = bytearray(b'')
-        while len(buf) < n_bytes:
-            recvd = sock.recv(n_bytes - len(buf))
-            if len(recvd) == 0:
-                raise ConnectionResetException()
-
-            buf.extend(recvd)
-
-        return bytes(buf)
+        self._send(payload_id, sync, payload)
