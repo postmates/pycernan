@@ -5,6 +5,7 @@ import types
 from fastavro import reader
 from future.utils import string_types
 from io import BytesIO
+from uuid import UUID
 
 from pycernan.avro.exceptions import SchemaParseException, SchemaResolutionException, DatumTypeException
 from pycernan.avro.serde import parse_schema, serialize, deserialize
@@ -152,7 +153,7 @@ TEST_SCHEMA_LOGICAL_TYPES = {
         },
         {
             "name": "customer_uuid",
-            "type": ["null", "string"],
+            "type": ["null", {"type": "string", "logicalType": "uuid"}],
             "default": None,
             "doc": "customer uuid",
         },
@@ -178,7 +179,7 @@ def test_logical_types():
 
     event = {
         'ts': datetime.utcnow().replace(tzinfo=timezone('UTC')),
-        'customer_uuid': 'some_random_uuid',
+        'customer_uuid': UUID('A49FD6C4-7E07-4A40-A889-87454EBFA03A'),
         'decimal_bytes': Decimal("-2.90"),
         'decimal_fixed': Decimal("3.68"),
     }
