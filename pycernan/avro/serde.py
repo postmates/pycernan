@@ -3,6 +3,7 @@ import sys
 import types
 
 from fastavro import reader, writer, parse_schema
+from fastavro.validation import ValidationError
 from io import BytesIO, IOBase
 
 from pycernan.avro.exceptions import DatumTypeException
@@ -44,8 +45,8 @@ def serialize(schema_map, batch, ephemeral_storage=False, **metadata):
             # Fast avro doesn't handle iterators within iterators gracefully..
             write_data = record_or_generator
         try:
-            writer(avro_buf, parsed_schema, write_data, codec='deflate', metadata=metadata)
-        except (ValueError, TypeError) as e:
+            writer(avro_buf, parsed_schema, write_data, codec='deflate', metadata=metadata, validator=True)
+        except (ValueError, TypeError, ValidationError) as e:
             raise DatumTypeException(e)
 
     return avro_buf.getvalue()
