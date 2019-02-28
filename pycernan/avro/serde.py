@@ -5,6 +5,8 @@ import types
 from fastavro import reader, writer, parse_schema
 from io import BytesIO, IOBase
 
+from pycernan.avro.exceptions import DatumTypeException
+
 
 def serialize(schema_map, batch, ephemeral_storage=False, **metadata):
     """
@@ -41,7 +43,10 @@ def serialize(schema_map, batch, ephemeral_storage=False, **metadata):
         if isinstance(record_or_generator, types.GeneratorType):
             # Fast avro doesn't handle iterators within iterators gracefully..
             write_data = record_or_generator
-        writer(avro_buf, parsed_schema, write_data, codec='deflate', metadata=metadata)
+        try:
+            writer(avro_buf, parsed_schema, write_data, codec='deflate', metadata=metadata)
+        except (ValueError, TypeError) as e:
+            raise DatumTypeException(e)
 
     return avro_buf.getvalue()
 
@@ -67,6 +72,7 @@ def deserialize(avro_bytes, decode_schema=False, reader_schema=None):
                     in metadata.
 
     """
+
     def _avro_generator(datafile_reader):
         for value in datafile_reader:
             yield value
