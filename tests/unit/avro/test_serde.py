@@ -77,6 +77,24 @@ def test_serialize_bad_datum_empty():
     with pytest.raises(DatumTypeException):
         serialize(USER_SCHEMA, [user])
 
+def test_serialize_bad_type_for_field():
+    user = {
+        'name': 'Foo Bar Matic',
+        'favorite_number': "Not an int",
+        'favorite_color': 'Nonyabusiness',
+    }
+    with pytest.raises(DatumTypeException):
+        serialize(USER_SCHEMA, [user])
+
+def test_serialize_bad_missing_required_field():
+    # Field "name" is required but missing
+    user = {
+        'favorite_number': "Not an int",
+        'favorite_color': 'Nonyabusiness',
+    }
+    with pytest.raises(DatumTypeException):
+        serialize(USER_SCHEMA, [user])
+
 
 @pytest.mark.parametrize('schema', [USER_SCHEMA, parse_schema(USER_SCHEMA)])
 @pytest.mark.parametrize('ephemeral', [True, False])
