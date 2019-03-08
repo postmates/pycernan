@@ -6,7 +6,7 @@ import settings
 from queue import Queue, Empty
 
 from pycernan.avro import BaseDummyClient, DummyClient
-from pycernan.avro.client import TCPConnectionPool, _DefunctConnection, EmptyPoolException
+from pycernan.avro.tcp_conn_pool import TCPConnectionPool, _DefunctConnection, EmptyPoolException
 from pycernan.avro.exceptions import SchemaParseException, DatumTypeException, EmptyBatchException
 
 
@@ -68,7 +68,7 @@ class TestTCPConnectionPool():
         with pytest.raises(Empty):
             pool.pool.get_nowait()
 
-    @mock.patch('pycernan.avro.client.socket.create_connection', autospec=True)
+    @mock.patch('pycernan.avro.tcp_conn_pool.socket.create_connection', autospec=True)
     def test_connection(self, connect_mock):
         mock_sock = FakeSocket()
         host, port = ('foobar', 9000)
@@ -93,7 +93,7 @@ class TestTCPConnectionPool():
                 with pool.connection(_block=False):
                     assert False  # Should not be reached
 
-    @mock.patch('pycernan.avro.client.socket.create_connection', autospec=True)
+    @mock.patch('pycernan.avro.tcp_conn_pool.socket.create_connection', autospec=True)
     def test_connection_on_exception_closes_connections(self, connect_mock):
         pool = TCPConnectionPool('foobar', 8080, 1, 1, 1)
 
@@ -126,7 +126,7 @@ class TestTCPConnectionPool():
             assert pool.pool.qsize() == 0
             assert pool.size == 0
 
-    @mock.patch('pycernan.avro.client.socket.create_connection', autospec=True)
+    @mock.patch('pycernan.avro.tcp_conn_pool.socket.create_connection', autospec=True)
     def test_exceptions_result_in_defunct_connections(self, connect_mock):
         size = 10
         pool = TCPConnectionPool('foobar', 80, size, 1, 1)
@@ -140,7 +140,7 @@ class TestTCPConnectionPool():
         assert pool.pool.qsize() == size
         assert pool.pool.get_nowait() == _DefunctConnection
 
-    @mock.patch('pycernan.avro.client.socket.create_connection', autospec=True)
+    @mock.patch('pycernan.avro.tcp_conn_pool.socket.create_connection', autospec=True)
     def test_defunct_connections_are_regenerated(self, connect_mock):
         pool = TCPConnectionPool('foobar', 80, 10, 1, 1)
         mock_sock = FakeSocket()
@@ -151,7 +151,7 @@ class TestTCPConnectionPool():
         with pool.connection() as conn:
             assert conn is mock_sock
 
-    @mock.patch('pycernan.avro.client.socket.create_connection', autospec=True)
+    @mock.patch('pycernan.avro.tcp_conn_pool.socket.create_connection', autospec=True)
     def test_regenerating_connections_tolerates_exceptions(self, connect_mock):
         num_failures = 20
         pool = TCPConnectionPool('foobar', 80, 10, 1, 1)
@@ -182,7 +182,7 @@ class TestTCPConnectionPool():
         assert pool.pool.qsize() == 1
         assert pool.pool.get_nowait() is mock_sock
 
-    @mock.patch('pycernan.avro.client.socket.create_connection', autospec=True)
+    @mock.patch('pycernan.avro.tcp_conn_pool.socket.create_connection', autospec=True)
     def test_closing_tolerates_close_exceptions(self, create_mock):
         expected_sock = FakeSocket(close_failures=10)
         create_mock.return_value = expected_sock
@@ -246,7 +246,7 @@ def test_publish_empty_batch():
         c.publish(USER_SCHEMA, [])
 
 
-@mock.patch('pycernan.avro.client.socket.create_connection', autospec=True)
+@mock.patch('pycernan.avro.tcp_conn_pool.socket.create_connection', autospec=True)
 def test_creating_a_client_connects_a_socket(m_connect):
     connect_timeout = 1
     publish_timeout = 50
@@ -264,7 +264,7 @@ def test_creating_a_client_connects_a_socket(m_connect):
         assert m_connect.call_args_list == [mock.call(('some fake host', 31337), timeout=connect_timeout)]
 
 
-@mock.patch('pycernan.avro.client.socket.create_connection', autospec=True)
+@mock.patch('pycernan.avro.tcp_conn_pool.socket.create_connection', autospec=True)
 def test_closing_the_client_closes_the_socket_and_clears_it(m_connect):
     expected_sock = FakeSocket()
     m_connect.return_value = expected_sock
@@ -290,7 +290,7 @@ def test_closing_the_client_closes_the_socket_and_clears_it(m_connect):
     assert client.pool.pool.qsize() == 0
 
 
-@mock.patch('pycernan.avro.client.socket.create_connection', autospec=True)
+@mock.patch('pycernan.avro.tcp_conn_pool.socket.create_connection', autospec=True)
 def test_closing_the_client_with_no_socket_does_not_crash(m_connect):
     expected_sock = FakeSocket()
     m_connect.return_value = expected_sock

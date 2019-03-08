@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 from pycernan import __version__
 
-install_requires = ['fastavro', 'future']
+install_requires = ['fastavro', 'future', 'prometheus_client']
 
 setup(
     name="pycernan",
