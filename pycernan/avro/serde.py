@@ -9,7 +9,7 @@ from io import BytesIO, IOBase
 from pycernan.avro.exceptions import DatumTypeException
 
 
-def serialize(schema_map, batch, ephemeral_storage=False, **metadata):
+def serialize(schema_map, batch, ephemeral_storage=False, validator=True, **metadata):
     """
         Serialize a batch of values, matching the given schema, as an
         Avro object container file.
@@ -45,7 +45,7 @@ def serialize(schema_map, batch, ephemeral_storage=False, **metadata):
             # Fast avro doesn't handle iterators within iterators gracefully..
             write_data = record_or_generator
         try:
-            writer(avro_buf, parsed_schema, write_data, codec='deflate', metadata=metadata, validator=True)
+            writer(avro_buf, parsed_schema, write_data, codec='deflate', metadata=metadata, validator=validator)
         except (ValueError, TypeError, ValidationError) as e:
             raise DatumTypeException(e)
 
